@@ -1,0 +1,34 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Workspace / IDE metadata
+.metadata/
+**/.settings/
+**/.classpath
+**/.project
+**/.factorypath
+**/.apt_generated/
+**/.springBeans
+**/.sts4-cache/
+
+# Maven / build output
+**/target/
+**/build/
+**/compile
+**/compile_utf8
+*.log
+
+# Environment / secrets
+.env
+*.env
+!.env.example
+
+# Local runtime files
+*.pid
+*.seed
+*.out
+*.err
+

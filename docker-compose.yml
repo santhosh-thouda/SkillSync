@@ -1,0 +1,211 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: skillsync-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_MULTIPLE_DATABASES: ${AUTH_DB},${USER_DB},${MENTOR_DB},${SKILL_DB},${SESSION_DB},${GROUP_DB},${REVIEW_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init-multiple-dbs.sh:/docker-entrypoint-initdb.d/init-multiple-dbs.sh
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: skillsync-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  eureka-server:
+    build:
+      context: ./eureka-server
+    container_name: skillsync-eureka-server
+    ports:
+      - "8761:8761"
+
+  auth-service:
+    build:
+      context: ./auth-service
+    container_name: skillsync-auth-service
+    depends_on:
+      - postgres
+      - eureka-server
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${AUTH_DB}
+      DB_USERNAME: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+      EUREKA_SERVER_URL: http://eureka-server:8761/eureka
+      EUREKA_INSTANCE_HOSTNAME: auth-service
+    ports:
+      - "8081:8081"
+
+  user-service:
+    build:
+      context: ./user-service
+    container_name: skillsync-user-service
+    depends_on:
+      - postgres
+      - eureka-server
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${USER_DB}
+      DB_USERNAME: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      EUREKA_SERVER_URL: http://eureka-server:8761/eureka
+      EUREKA_INSTANCE_HOSTNAME: user-service
+    ports:
+      - "8082:8082"
+
+  mentor-service:
+    build:
+      context: ./mentor-service
+    container_name: skillsync-mentor-service
+    depends_on:
+      - postgres
+      - eureka-server
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${MENTOR_DB}
+      DB_USERNAME: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      EUREKA_SERVER_URL: http://eureka-server:8761/eureka
+      EUREKA_INSTANCE_HOSTNAME: mentor-service
+    ports:
+      - "8083:8083"
+
+  skill-service:
+    build:
+      context: ./skill-service
+    container_name: skillsync-skill-service
+    depends_on:
+      - postgres
+      - eureka-server
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${SKILL_DB}
+      DB_USERNAME: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      EUREKA_SERVER_URL: http://eureka-server:8761/eureka
+      EUREKA_INSTANCE_HOSTNAME: skill-service
+    ports:
+      - "8084:8084"
+
+  session-service:
+    build:
+      context: ./session-service
+    container_name: skillsync-session-service
+    depends_on:
+      - postgres
+      - rabbitmq
+      - eureka-server
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${SESSION_DB}
+      DB_USERNAME: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS}
+      RABBITMQ_EXCHANGE: ${RABBITMQ_EXCHANGE}
+      RABBITMQ_QUEUE: ${RABBITMQ_QUEUE}
+      RABBITMQ_ROUTING_KEY: ${RABBITMQ_ROUTING_KEY}
+      EUREKA_SERVER_URL: http://eureka-server:8761/eureka
+      EUREKA_INSTANCE_HOSTNAME: session-service
+    ports:
+      - "8085:8085"
+
+  group-service:
+    build:
+      context: ./group-service
+    container_name: skillsync-group-service
+    depends_on:
+      - postgres
+      - eureka-server
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${GROUP_DB}
+      DB_USERNAME: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      EUREKA_SERVER_URL: http://eureka-server:8761/eureka
+      EUREKA_INSTANCE_HOSTNAME: group-service
+    ports:
+      - "8086:8086"
+
+  review-service:
+    build:
+      context: ./review-service
+    container_name: skillsync-review-service
+    depends_on:
+      - postgres
+      - eureka-server
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${REVIEW_DB}
+      DB_USERNAME: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      EUREKA_SERVER_URL: http://eureka-server:8761/eureka
+      EUREKA_INSTANCE_HOSTNAME: review-service
+    ports:
+      - "8087:8087"
+
+  notification-service:
+    build:
+      context: ./notification-service
+    container_name: skillsync-notification-service
+    depends_on:
+      - rabbitmq
+      - eureka-server
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS}
+      RABBITMQ_EXCHANGE: ${RABBITMQ_EXCHANGE}
+      RABBITMQ_QUEUE: ${RABBITMQ_QUEUE}
+      RABBITMQ_ROUTING_KEY: ${RABBITMQ_ROUTING_KEY}
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      EUREKA_SERVER_URL: http://eureka-server:8761/eureka
+      EUREKA_INSTANCE_HOSTNAME: notification-service
+    ports:
+      - "8088:8088"
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+    container_name: skillsync-api-gateway
+    depends_on:
+      - eureka-server
+      - auth-service
+      - user-service
+      - mentor-service
+      - skill-service
+      - session-service
+      - group-service
+      - review-service
+    environment:
+      EUREKA_SERVER_URL: http://eureka-server:8761/eureka
+    ports:
+      - "8080:8080"
+
+volumes:
+  postgres_data:
