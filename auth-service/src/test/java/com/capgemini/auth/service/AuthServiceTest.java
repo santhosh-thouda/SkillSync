@@ -1,6 +1,7 @@
 package com.capgemini.auth.service;
 
 import com.capgemini.auth.client.MentorServiceClient;
+import com.capgemini.auth.client.UserServiceClient;
 import com.capgemini.auth.dto.AuthResponse;
 import com.capgemini.auth.dto.LoginRequest;
 import com.capgemini.auth.dto.MentorSyncRequest;
@@ -16,9 +17,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.Optional;
 
@@ -26,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -47,7 +47,7 @@ class AuthServiceTest {
     private MentorServiceClient mentorServiceClient;
 
     @Mock
-    private RestTemplate restTemplate;
+    private UserServiceClient userServiceClient;
 
     private AuthService authService;
 
@@ -58,8 +58,7 @@ class AuthServiceTest {
                 passwordEncoder,
                 jwtUtil,
                 mentorServiceClient,
-                restTemplate,
-                "http://localhost:8082");
+                userServiceClient);
     }
 
     @Test
@@ -74,11 +73,7 @@ class AuthServiceTest {
 
         when(passwordEncoder.encode("secret")).thenReturn("encoded-secret");
         when(userRepository.save(any(User.class))).thenReturn(savedUser);
-        when(restTemplate.postForEntity(
-                eq("http://localhost:8082/users"),
-                any(UserSyncRequest.class),
-                eq(String.class)))
-                .thenReturn(ResponseEntity.ok("created"));
+        when(jwtUtil.generateToken("alex@example.com", 1L, "learner")).thenReturn("jwt-token");
 
         authService.register(request);
 
@@ -89,11 +84,11 @@ class AuthServiceTest {
         assertEquals("encoded-secret", userCaptor.getValue().getPassword());
 
         ArgumentCaptor<UserSyncRequest> syncCaptor = ArgumentCaptor.forClass(UserSyncRequest.class);
-        verify(restTemplate).postForEntity(eq("http://localhost:8082/users"), syncCaptor.capture(), eq(String.class));
+        verify(userServiceClient).createUser(eq("Bearer jwt-token"), syncCaptor.capture());
         assertEquals("Alex", syncCaptor.getValue().getName());
         assertEquals("alex@example.com", syncCaptor.getValue().getEmail());
         assertEquals("LEARNER", syncCaptor.getValue().getRole());
-        verify(mentorServiceClient, never()).createMentor(any(MentorSyncRequest.class));
+        verify(mentorServiceClient, never()).createMentor(any(String.class), any(MentorSyncRequest.class));
     }
 
     @Test
@@ -108,14 +103,15 @@ class AuthServiceTest {
 
         when(passwordEncoder.encode("secret")).thenReturn("encoded-secret");
         when(userRepository.save(any(User.class))).thenReturn(savedUser);
+        when(jwtUtil.generateToken("taylor@example.com", 5L, "MENTOR")).thenReturn("jwt-token");
         doThrow(new RuntimeException("mentor sync failed"))
-                .when(mentorServiceClient).createMentor(any(MentorSyncRequest.class));
+                .when(mentorServiceClient).createMentor(startsWith("Bearer "), any(MentorSyncRequest.class));
 
         RuntimeException exception = assertThrows(RuntimeException.class, () -> authService.register(request));
 
         assertEquals("mentor sync failed", exception.getMessage());
         verify(userRepository).delete(savedUser);
-        verify(restTemplate, never()).postForEntity(any(String.class), any(), eq(String.class));
+        verify(userServiceClient, never()).createUser(any(String.class), any(UserSyncRequest.class));
     }
 
     @Test
@@ -128,7 +124,7 @@ class AuthServiceTest {
 
         when(userRepository.findByEmail("alex@example.com")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("secret", "hashed")).thenReturn(true);
-        when(jwtUtil.generateToken("alex@example.com")).thenReturn("jwt-token");
+        when(jwtUtil.generateToken("alex@example.com", 10L, "LEARNER")).thenReturn("jwt-token");
 
         AuthResponse response = authService.login(request);
 
@@ -160,7 +156,7 @@ class AuthServiceTest {
 
         when(jwtUtil.extractEmail("old-token")).thenReturn("alex@example.com");
         when(userRepository.findByEmail("alex@example.com")).thenReturn(Optional.of(user));
-        when(jwtUtil.generateToken("alex@example.com")).thenReturn("new-token");
+        when(jwtUtil.generateToken("alex@example.com", 7L, "ADMIN")).thenReturn("new-token");
 
         AuthResponse response = authService.refresh(request);
 

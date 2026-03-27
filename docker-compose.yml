@@ -2,6 +2,7 @@ services:
   postgres:
     image: postgres:16
     container_name: skillsync-postgres
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -11,21 +12,48 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/postgres/init-multiple-dbs.sh:/docker-entrypoint-initdb.d/init-multiple-dbs.sh
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
 
   rabbitmq:
     image: rabbitmq:3-management
     container_name: skillsync-rabbitmq
+    restart: unless-stopped
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
     ports:
       - "5672:5672"
       - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
+      timeout: 20s
+      retries: 10
+      start_period: 60s
+
+  zipkin:
+    image: openzipkin/zipkin
+    container_name: skillsync-zipkin
+    restart: unless-stopped
+    ports:
+      - "9412:9411"
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "9411"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
 
   eureka-server:
     build:
       context: ./eureka-server
     container_name: skillsync-eureka-server
+    restart: unless-stopped
     ports:
       - "8761:8761"
 
@@ -34,8 +62,13 @@ services:
       context: ./auth-service
     container_name: skillsync-auth-service
     depends_on:
-      - postgres
-      - eureka-server
+      postgres:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+      zipkin:
+        condition: service_started
+    restart: unless-stopped
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
@@ -46,6 +79,8 @@ services:
       JWT_EXPIRATION: ${JWT_EXPIRATION}
       EUREKA_SERVER_URL: http://eureka-server:8761/eureka
       EUREKA_INSTANCE_HOSTNAME: auth-service
+      ZIPKIN_ENABLED: "true"
+      ZIPKIN_ENDPOINT: http://zipkin:9411/api/v2/spans
     ports:
       - "8081:8081"
 
@@ -54,8 +89,13 @@ services:
       context: ./user-service
     container_name: skillsync-user-service
     depends_on:
-      - postgres
-      - eureka-server
+      postgres:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+      zipkin:
+        condition: service_started
+    restart: unless-stopped
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
@@ -64,6 +104,8 @@ services:
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       EUREKA_SERVER_URL: http://eureka-server:8761/eureka
       EUREKA_INSTANCE_HOSTNAME: user-service
+      ZIPKIN_ENABLED: "true"
+      ZIPKIN_ENDPOINT: http://zipkin:9411/api/v2/spans
     ports:
       - "8082:8082"
 
@@ -72,8 +114,11 @@ services:
       context: ./mentor-service
     container_name: skillsync-mentor-service
     depends_on:
-      - postgres
-      - eureka-server
+      postgres:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    restart: unless-stopped
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
@@ -82,6 +127,8 @@ services:
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       EUREKA_SERVER_URL: http://eureka-server:8761/eureka
       EUREKA_INSTANCE_HOSTNAME: mentor-service
+      ZIPKIN_ENABLED: "true"
+      ZIPKIN_ENDPOINT: http://zipkin:9411/api/v2/spans
     ports:
       - "8083:8083"
 
@@ -90,8 +137,11 @@ services:
       context: ./skill-service
     container_name: skillsync-skill-service
     depends_on:
-      - postgres
-      - eureka-server
+      postgres:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    restart: unless-stopped
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
@@ -100,6 +150,8 @@ services:
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       EUREKA_SERVER_URL: http://eureka-server:8761/eureka
       EUREKA_INSTANCE_HOSTNAME: skill-service
+      ZIPKIN_ENABLED: "true"
+      ZIPKIN_ENDPOINT: http://zipkin:9411/api/v2/spans
     ports:
       - "8084:8084"
 
@@ -108,9 +160,13 @@ services:
       context: ./session-service
     container_name: skillsync-session-service
     depends_on:
-      - postgres
-      - rabbitmq
-      - eureka-server
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    restart: unless-stopped
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
@@ -126,6 +182,8 @@ services:
       RABBITMQ_ROUTING_KEY: ${RABBITMQ_ROUTING_KEY}
       EUREKA_SERVER_URL: http://eureka-server:8761/eureka
       EUREKA_INSTANCE_HOSTNAME: session-service
+      ZIPKIN_ENABLED: "true"
+      ZIPKIN_ENDPOINT: http://zipkin:9411/api/v2/spans
     ports:
       - "8085:8085"
 
@@ -134,8 +192,11 @@ services:
       context: ./group-service
     container_name: skillsync-group-service
     depends_on:
-      - postgres
-      - eureka-server
+      postgres:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    restart: unless-stopped
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
@@ -144,6 +205,8 @@ services:
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       EUREKA_SERVER_URL: http://eureka-server:8761/eureka
       EUREKA_INSTANCE_HOSTNAME: group-service
+      ZIPKIN_ENABLED: "true"
+      ZIPKIN_ENDPOINT: http://zipkin:9411/api/v2/spans
     ports:
       - "8086:8086"
 
@@ -152,8 +215,11 @@ services:
       context: ./review-service
     container_name: skillsync-review-service
     depends_on:
-      - postgres
-      - eureka-server
+      postgres:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    restart: unless-stopped
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
@@ -162,6 +228,8 @@ services:
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       EUREKA_SERVER_URL: http://eureka-server:8761/eureka
       EUREKA_INSTANCE_HOSTNAME: review-service
+      ZIPKIN_ENABLED: "true"
+      ZIPKIN_ENDPOINT: http://zipkin:9411/api/v2/spans
     ports:
       - "8087:8087"
 
@@ -170,8 +238,11 @@ services:
       context: ./notification-service
     container_name: skillsync-notification-service
     depends_on:
-      - rabbitmq
-      - eureka-server
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    restart: unless-stopped
     environment:
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
@@ -186,6 +257,8 @@ services:
       MAIL_PASSWORD: ${MAIL_PASSWORD}
       EUREKA_SERVER_URL: http://eureka-server:8761/eureka
       EUREKA_INSTANCE_HOSTNAME: notification-service
+      ZIPKIN_ENABLED: "true"
+      ZIPKIN_ENDPOINT: http://zipkin:9411/api/v2/spans
     ports:
       - "8088:8088"
 
@@ -194,16 +267,36 @@ services:
       context: ./api-gateway
     container_name: skillsync-api-gateway
     depends_on:
-      - eureka-server
-      - auth-service
-      - user-service
-      - mentor-service
-      - skill-service
-      - session-service
-      - group-service
-      - review-service
+      eureka-server:
+        condition: service_started
+      auth-service:
+        condition: service_started
+      user-service:
+        condition: service_started
+      mentor-service:
+        condition: service_started
+      skill-service:
+        condition: service_started
+      session-service:
+        condition: service_started
+      group-service:
+        condition: service_started
+      review-service:
+        condition: service_started
+      zipkin:
+        condition: service_started
+    restart: unless-stopped
     environment:
       EUREKA_SERVER_URL: http://eureka-server:8761/eureka
+      GATEWAY_DOCS_AUTH_SERVICE_URL: http://auth-service:8081
+      GATEWAY_DOCS_USER_SERVICE_URL: http://user-service:8082
+      GATEWAY_DOCS_MENTOR_SERVICE_URL: http://mentor-service:8083
+      GATEWAY_DOCS_SKILL_SERVICE_URL: http://skill-service:8084
+      GATEWAY_DOCS_SESSION_SERVICE_URL: http://session-service:8085
+      GATEWAY_DOCS_GROUP_SERVICE_URL: http://group-service:8086
+      GATEWAY_DOCS_REVIEW_SERVICE_URL: http://review-service:8087
+      ZIPKIN_ENABLED: "true"
+      ZIPKIN_ENDPOINT: http://zipkin:9411/api/v2/spans
     ports:
       - "8080:8080"
 

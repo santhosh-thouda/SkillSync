@@ -7,6 +7,7 @@ import com.capgemini.user.exception.ResourceNotFoundException;
 import com.capgemini.user.mapper.UserMapper;
 import com.capgemini.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -14,6 +15,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
@@ -21,6 +23,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserDto getUserById(Long id) {
+        log.info("Fetching user by id: {}", id);
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
         return userMapper.toDto(user);
@@ -35,12 +38,14 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserDto createUser(UserDto request) {
+        log.info("Creating new user with email: {}", request.getEmail());
         User user = new User();
         user.setName(request.getName());
         user.setEmail(request.getEmail());
         user.setRole(request.getRole());
         user.setPassword("N/A"); 
         User savedUser = userRepository.save(user);
+        log.info("Successfully created user with id: {}", savedUser.getId());
         return userMapper.toDto(savedUser);
     }
 

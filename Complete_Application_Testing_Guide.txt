@@ -56,6 +56,27 @@ Use this file to test:
   C:\Users\santh\Advance_Java_MicroServices\SkillSync\auth-service\src\main\java\com\capgemini\auth\security\JwtAuthenticationFilter.java
   C:\Users\santh\Advance_Java_MicroServices\SkillSync\auth-service\src\main\java\com\capgemini\auth\security\JwtUtil.java
 
+- Service-level JWT/OpenAPI security:
+  user-service/.../config/SecurityConfig.java
+  user-service/.../config/OpenApiConfig.java
+  user-service/.../security/JwtAuthenticationFilter.java
+  user-service/.../security/AccessControlService.java
+  mentor-service/.../config/SecurityConfig.java
+  mentor-service/.../config/OpenApiConfig.java
+  mentor-service/.../security/JwtAuthenticationFilter.java
+  mentor-service/.../security/AccessControlService.java
+  skill-service/.../config/SecurityConfig.java
+  skill-service/.../config/OpenApiConfig.java
+  session-service/.../config/SecurityConfig.java
+  session-service/.../config/OpenApiConfig.java
+  session-service/.../security/AccessControlService.java
+  group-service/.../config/SecurityConfig.java
+  group-service/.../config/OpenApiConfig.java
+  group-service/.../security/AccessControlService.java
+  review-service/.../config/SecurityConfig.java
+  review-service/.../config/OpenApiConfig.java
+  review-service/.../security/AccessControlService.java
+
 - Global exception handlers:
   auth-service/.../exception/GlobalExceptionHandler.java
   user-service/.../exception/GlobalExceptionHandler.java
@@ -133,6 +154,10 @@ Local env variables to test:
 Quick check:
 1. Run without env vars and confirm local defaults still work.
 2. Override one service DB name or JWT secret through env vars and confirm startup still succeeds.
+3. IMPORTANT: use the same JWT_SECRET value in auth-service, user-service, mentor-service,
+   skill-service, session-service, group-service, and review-service.
+4. If JWT_SECRET differs across services, login may work in auth-service but protected
+   downstream requests will fail with 401/403.
 
 
 6. STARTUP ORDER FOR LOCAL MANUAL TESTING
@@ -209,6 +234,14 @@ Check:
 1. Swagger UI opens without 404
 2. Endpoints are listed
 3. API docs JSON loads successfully
+4. Service-level Swagger UIs for auth/user/mentor/skill/session/group/review should show
+   the Authorize button because bearer JWT support is configured in OpenAPI
+5. Use Authorize with:
+   Bearer <jwt-token>
+6. If Authorize does not appear, restart the service and refresh Swagger UI
+7. Prefer testing secured APIs from the service Swagger UIs directly
+8. Gateway Swagger availability is still useful for route/docs checks, but role-based
+   access testing should be done against the downstream service Swagger UIs
 
 
 10. AUTH SERVICE TESTING
@@ -264,6 +297,12 @@ Expected:
 - 200 OK
 - new token returned
 
+JWT claim expectations:
+- token contains subject = user email
+- token contains userId claim
+- token contains role claim
+- these claims are used by downstream services for authorization and ownership checks
+
 Validation tests:
 - blank email
 - invalid email
@@ -282,9 +321,41 @@ Security filter test:
 4. Expect request to pass
 
 
+10A. ROLE / ACCESS CONTROL MATRIX
+---------------------------------
+Use at least these three users for manual testing:
+- ADMIN user
+- LEARNER user
+- MENTOR user
+
+Intended access rules currently implemented:
+- ADMIN:
+  full access to protected user, mentor, skill, session, group, and review operations
+- LEARNER:
+  can read/update/delete own user profile
+  can create own group and join/leave only as self
+  can create review only with own userId
+  can request session only with own learnerId
+  can cancel own session
+  can read own learner sessions
+- MENTOR:
+  can apply for mentor profile only with own userId
+  can update/delete own mentor profile
+  can accept/reject/complete own mentor sessions
+  can read own mentor sessions
+  can create skills
+
+Expected security status codes:
+- 401 when Authorization header is missing or token is invalid
+- 403 when token is valid but role or ownership is wrong
+
+
 11. USER SERVICE TESTING
 ------------------------
-Base URL via gateway:
+Preferred direct URL:
+- http://localhost:8082/users
+
+Gateway URL:
 - http://localhost:8080/users
 
 Endpoints:
@@ -295,43 +366,43 @@ Endpoints:
 - PUT /users/{id}
 - DELETE /users/{id}
 
-Create user:
-POST /users
-{
-  "name": "API User",
-  "email": "apiuser@example.com",
-  "role": "LEARNER"
-}
+Authorization rules:
+- GET /users -> ADMIN only
+- GET /users/{id} -> ADMIN or same user only
+- GET /users/email/{email} -> ADMIN or same user only
+- POST /users -> ADMIN or same authenticated user during sync-style creation
+- PUT /users/{id} -> ADMIN or same user only
+- DELETE /users/{id} -> ADMIN or same user only
 
-Expected:
-- 201 Created
+Positive tests:
+1. Login as learner and authorize in Swagger
+2. GET /users/{learnerId}
+   Expected: 200 OK
+3. PUT /users/{learnerId}
+   Expected: 200 OK
+4. Login as admin
+5. GET /users
+   Expected: 200 OK
 
-Update user:
-PUT /users/{id}
-{
-  "name": "Updated User",
-  "profileImage": "avatar.png"
-}
+Negative tests:
+1. Login as learner
+2. GET /users/{someOtherUserId}
+   Expected: 403 Forbidden
+3. GET /users
+   Expected: 403 Forbidden
+4. Call any protected user endpoint without token
+   Expected: 401 Unauthorized
+5. GET non-existing ID with valid authorization
+   Expected: 404 with message, status, error, path
 
-Expected:
-- 200 OK
-
-Delete user:
-DELETE /users/{id}
-
-Expected:
-- 204 No Content
-
-Negative test:
-- GET non-existing ID
-
-Expected:
-- 404 with message, status, error, path
 
 
 12. MENTOR SERVICE TESTING
 --------------------------
-Base URL:
+Preferred direct URL:
+- http://localhost:8083/mentors
+
+Gateway URL:
 - http://localhost:8080/mentors
 
 Endpoints:
@@ -342,35 +413,37 @@ Endpoints:
 - PUT /mentors/{id}/approve
 - DELETE /mentors/{id}
 
-Apply:
-POST /mentors/apply
-{
-  "userId": 1,
-  "bio": "Java mentor",
-  "experience": 5,
-  "hourlyRate": 500,
-  "skills": [1,2]
-}
+Authorization rules:
+- POST /mentors/apply -> ADMIN or MENTOR acting on own userId
+- GET /mentors and GET /mentors/{id} -> any authenticated user
+- PUT /mentors/{id}/availability -> ADMIN or owning mentor only
+- PUT /mentors/{id}/approve -> ADMIN only
+- DELETE /mentors/{id} -> ADMIN or owning mentor only
 
-Expected:
-- 201 Created
+Positive tests:
+1. Login as mentor and authorize
+2. POST /mentors/apply with userId = logged-in mentor userId
+   Expected: 201 Created
+3. PUT /mentors/{ownMentorId}/availability
+   Expected: 200 OK
+4. Login as admin
+5. PUT /mentors/{mentorId}/approve
+   Expected: 200 OK
 
-Update availability:
-PUT /mentors/{id}/availability
-{
-  "available": false
-}
-
-Approve:
-PUT /mentors/{id}/approve
-
-Delete:
-DELETE /mentors/{id}
+Negative tests:
+1. Login as learner
+2. POST /mentors/apply
+   Expected: 403 Forbidden
+3. Login as one mentor and update another mentor's availability
+   Expected: 403 Forbidden
 
 
 13. SKILL SERVICE TESTING
 -------------------------
-Base URL:
+Preferred direct URL:
+- http://localhost:8084/skills
+
+Gateway URL:
 - http://localhost:8080/skills
 
 Endpoints:
@@ -379,26 +452,35 @@ Endpoints:
 - GET /skills/{id}
 - DELETE /skills/{id}
 
-Create:
-POST /skills
-{
-  "name": "Spring Boot",
-  "category": "Backend"
-}
+Authorization rules:
+- POST /skills -> ADMIN or MENTOR
+- GET /skills and GET /skills/{id} -> any authenticated user
+- DELETE /skills/{id} -> ADMIN only
 
-Expected:
-- 201 Created
+Positive tests:
+1. Login as mentor
+2. POST /skills
+   Expected: 201 Created
+3. GET /skills
+   Expected: 200 OK
+4. Login as admin
+5. DELETE /skills/{id}
+   Expected: 204 No Content
 
-List:
-- GET /skills
-
-Delete:
-- DELETE /skills/{id}
+Negative tests:
+1. Login as learner
+2. POST /skills
+   Expected: 403 Forbidden
+3. DELETE /skills/{id}
+   Expected: 403 Forbidden
 
 
 14. SESSION SERVICE TESTING
 ---------------------------
-Base URL:
+Preferred direct URL:
+- http://localhost:8085/sessions
+
+Gateway URL:
 - http://localhost:8080/sessions
 
 Endpoints:
@@ -419,17 +501,39 @@ POST /sessions
   "sessionDate": "2026-12-01T10:00:00"
 }
 
-Expected:
-- 201 Created
-- status = REQUESTED
+Authorization rules:
+- POST /sessions -> ADMIN or LEARNER acting as own learnerId
+- PUT /sessions/{id}/accept -> ADMIN or owning mentor only
+- PUT /sessions/{id}/reject -> ADMIN or owning mentor only
+- PUT /sessions/{id}/cancel -> ADMIN or owning learner only
+- PUT /sessions/{id}/complete -> ADMIN or owning mentor only
+- GET /sessions/user/{userId} -> ADMIN or same learner only
+- GET /sessions/mentor/{mentorId} -> ADMIN or same mentor only
+- DELETE /sessions/{id} -> ADMIN or owning learner/mentor only
 
-Status update:
-- PUT /sessions/{id}/accept
-- Expect status ACCEPTED
+Positive tests:
+1. Login as learner
+2. POST /sessions with learnerId = logged-in learner userId
+   Expected: 201 Created and status = REQUESTED
+3. GET /sessions/user/{learnerId}
+   Expected: 200 OK
+4. Login as mentor
+5. PUT /sessions/{id}/accept
+   Expected: 200 OK and status = ACCEPTED
+6. PUT /sessions/{id}/complete
+   Expected: 200 OK and status = COMPLETED
 
 Validation test:
 - Use past sessionDate
 - Expect 400 validation error
+
+Negative tests:
+1. Login as learner and call PUT /sessions/{id}/accept
+   Expected: 403 Forbidden
+2. Login as mentor and call PUT /sessions/{id}/cancel
+   Expected: 403 Forbidden
+3. Login as learner and request session with another learnerId
+   Expected: 403 Forbidden
 
 RabbitMQ behavior:
 1. Create session
@@ -440,7 +544,10 @@ RabbitMQ behavior:
 
 15. GROUP SERVICE TESTING
 -------------------------
-Base URL:
+Preferred direct URL:
+- http://localhost:8086/groups
+
+Gateway URL:
 - http://localhost:8080/groups
 
 Endpoints:
@@ -451,27 +558,36 @@ Endpoints:
 - GET /groups/{id}
 - DELETE /groups/{id}
 
-Create:
-POST /groups
-{
-  "name": "Backend Learners",
-  "description": "Spring Boot preparation",
-  "createdBy": 2
-}
+Authorization rules:
+- POST /groups -> ADMIN or same user as createdBy
+- POST /groups/{id}/join -> ADMIN or same user as query param userId
+- POST /groups/{id}/leave -> ADMIN or same user as query param userId
+- GET /groups and GET /groups/{id} -> any authenticated user
+- DELETE /groups/{id} -> ADMIN or group creator only
 
-Join:
-- POST /groups/{id}/join?userId=3
+Positive tests:
+1. Login as learner
+2. POST /groups with createdBy = logged-in learner userId
+   Expected: 201 Created
+3. POST /groups/{id}/join?userId={sameLoggedInUserId}
+   Expected: 200 OK
+4. Login as admin
+5. DELETE /groups/{id}
+   Expected: 204 No Content
 
-Leave:
-- POST /groups/{id}/leave?userId=3
-
-Delete:
-- DELETE /groups/{id}
+Negative tests:
+1. Login as learner and join group using another user's userId
+   Expected: 403 Forbidden
+2. Login as learner and delete a group created by someone else
+   Expected: 403 Forbidden
 
 
 16. REVIEW SERVICE TESTING
 --------------------------
-Base URL:
+Preferred direct URL:
+- http://localhost:8087/reviews
+
+Gateway URL:
 - http://localhost:8080/reviews
 
 Endpoints:
@@ -488,8 +604,23 @@ POST /reviews
   "comment": "Excellent mentoring"
 }
 
-Expected:
-- 201 Created
+Authorization rules:
+- POST /reviews -> ADMIN or LEARNER acting as own userId
+- GET /reviews/mentor/{mentorId} -> any authenticated user
+- DELETE /reviews/{id} -> ADMIN or creator of the review only
+
+Positive tests:
+1. Login as learner
+2. POST /reviews with userId = logged-in learner userId
+   Expected: 201 Created
+3. GET /reviews/mentor/{mentorId}
+   Expected: 200 OK
+
+Negative tests:
+1. Login as learner and create review using another userId
+   Expected: 403 Forbidden
+2. Login as a different learner and delete someone else's review
+   Expected: 403 Forbidden
 
 Validation test:
 - rating = 0
@@ -537,6 +668,8 @@ Checks:
 2. Requests route correctly to downstream services
 3. Swagger UI loads
 4. CORS works for external client if needed
+5. Gateway security is not yet the main RBAC enforcement point
+6. Do security validation primarily against downstream services
 
 
 19. GLOBAL EXCEPTION HANDLING TESTING
@@ -626,6 +759,11 @@ Review:
 - Read by mentor
 - Delete
 
+Also cover:
+- role mismatch scenarios
+- ownership mismatch scenarios
+- Swagger Authorize flow on each secured service
+
 
 22. JWT SECURITY CHECKLIST
 --------------------------
@@ -635,9 +773,21 @@ Check:
 3. Valid bearer token is accepted
 4. Invalid bearer token is rejected
 5. Missing token is rejected
+6. Token carries email, userId, and role claims
+7. Same JWT_SECRET is configured in auth-service and all secured downstream services
+8. Swagger Authorize button appears on secured service Swagger UIs
+9. Authenticated user with wrong role gets 403
+10. Authenticated user with correct role but wrong resource ownership gets 403
 
 Header format:
 Authorization: Bearer <token>
+
+Swagger format:
+1. Open service Swagger UI
+2. Click Authorize
+3. Enter:
+   Bearer <token>
+4. Execute secured requests
 
 
 23. TEST COMMANDS FOR MODULES
@@ -1150,19 +1300,21 @@ Eureka:
 ------------------------------------
 1. Start all services
 2. Open Eureka
-3. Open Swagger for gateway and auth
-4. Register learner through auth
-5. Login and save JWT
-6. Create skill
-7. Apply mentor
-8. Create user profile if needed
-9. Request session
-10. Accept session
+3. Open Swagger for auth-service and the downstream secured services
+4. Register learner, mentor, and admin test users through auth as needed
+5. Login and save JWT for each role
+6. Use Swagger Authorize in user-service, mentor-service, skill-service, session-service,
+   group-service, and review-service
+7. As mentor or admin, create skill
+8. As mentor, apply for mentor profile using own userId
+9. As learner, request session using own learnerId
+10. As mentor, accept session
 11. Check RabbitMQ and notification logs
-12. Create review
-13. Create group
-14. Join and leave group
-15. Delete created test records
+12. As learner, create review using own userId
+13. As learner, create group using own createdBy
+14. As learner, join and leave group as self
+15. Run negative tests for wrong role and wrong ownership and confirm 403
+16. Delete created test records as allowed role
 
 
 29. IF SOMETHING FAILS
@@ -1183,9 +1335,11 @@ Check:
 This application can now be tested through:
 - direct service URLs
 - API gateway URLs
-- Swagger UI
+- Swagger UI with JWT Authorize on secured services
 - Maven tests
 - Docker Compose
 - manual DB and RabbitMQ verification
+- role-based authorization checks
+- ownership-based access control checks
 
 Use this file as your main QA runbook for SkillSync.

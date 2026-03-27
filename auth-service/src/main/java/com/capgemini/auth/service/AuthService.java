@@ -1,6 +1,7 @@
 package com.capgemini.auth.service;
 
 import com.capgemini.auth.client.MentorServiceClient;
+import com.capgemini.auth.client.UserServiceClient;
 import com.capgemini.auth.dto.AuthResponse;
 import com.capgemini.auth.dto.LoginRequest;
 import com.capgemini.auth.dto.MentorSyncRequest;
@@ -13,42 +14,40 @@ import com.capgemini.auth.exception.ResourceNotFoundException;
 import com.capgemini.auth.repository.UserRepository;
 import com.capgemini.auth.security.JwtUtil;
 import jakarta.annotation.PostConstruct;
-import org.springframework.beans.factory.annotation.Value;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.Collections;
 import java.util.Locale;
 
 @Service
+@Slf4j
 public class AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final MentorServiceClient mentorServiceClient;
-    private final RestTemplate restTemplate;
-    private final String userServiceUrl;
+    private final UserServiceClient userServiceClient;
 
     public AuthService(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
             JwtUtil jwtUtil,
             MentorServiceClient mentorServiceClient,
-            RestTemplate restTemplate,
-            @Value("${user.service.url:http://localhost:8082}") String userServiceUrl) {
+            UserServiceClient userServiceClient) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
         this.mentorServiceClient = mentorServiceClient;
-        this.restTemplate = restTemplate;
-        this.userServiceUrl = userServiceUrl;
+        this.userServiceClient = userServiceClient;
     }
 
     @PostConstruct
     public void initAdminUser() {
         if (userRepository.findByEmail("useradmin").isEmpty()) {
+            log.info("Initializing default admin user: useradmin");
             User admin = new User();
             admin.setName("Admin User");
             admin.setEmail("useradmin");
@@ -59,6 +58,7 @@ public class AuthService {
     }
 
     public void register(RegisterRequest request) {
+        log.info("Registering new user with email: {} and role: {}", request.getEmail(), request.getRole());
         User user = new User();
         user.setName(request.getName());
         user.setEmail(request.getEmail());
@@ -69,7 +69,9 @@ public class AuthService {
 
         try {
             syncRegistration(savedUser);
+            log.info("Successfully registered and synced user: {}", savedUser.getEmail());
         } catch (RuntimeException ex) {
+            log.error("Failed to sync registration for user: {}. Rolling back registration.", savedUser.getEmail(), ex);
             userRepository.delete(savedUser);
             throw ex;
         }
@@ -79,6 +81,7 @@ public class AuthService {
         String role = savedUser.getRole() == null ? "" : savedUser.getRole().trim().toUpperCase(Locale.ROOT);
 
         if ("LEARNER".equals(role) || "USER".equals(role)) {
+            log.info("Syncing learner profile to user-service for email: {}", savedUser.getEmail());
             UserSyncRequest userRequest = new UserSyncRequest(
                     null,
                     savedUser.getName(),
@@ -87,18 +90,25 @@ public class AuthService {
                     null,
                     null);
 
-            restTemplate.postForEntity(userServiceUrl + "/users", userRequest, String.class);
+            userServiceClient.createUser("Bearer " + jwtUtil.generateToken(
+                    savedUser.getEmail(),
+                    savedUser.getId(),
+                    savedUser.getRole()), userRequest);
             return;
         }
 
         if ("MENTOR".equals(role)) {
+            log.info("Syncing mentor profile to mentor-service for email: {}", savedUser.getEmail());
             MentorSyncRequest mentorRequest = new MentorSyncRequest();
             mentorRequest.setUserId(savedUser.getId());
             mentorRequest.setBio("New mentor profile");
             mentorRequest.setExperience(0);
             mentorRequest.setHourlyRate(0.0);
             mentorRequest.setSkills(Collections.emptyList());
-            mentorServiceClient.createMentor(mentorRequest);
+            mentorServiceClient.createMentor("Bearer " + jwtUtil.generateToken(
+                    savedUser.getEmail(),
+                    savedUser.getId(),
+                    savedUser.getRole()), mentorRequest);
         }
     }
 
@@ -110,7 +120,7 @@ public class AuthService {
             throw new BadRequestException("Invalid password");
         }
 
-        String token = jwtUtil.generateToken(user.getEmail());
+        String token = jwtUtil.generateToken(user.getEmail(), user.getId(), user.getRole());
 
         return new AuthResponse(token, user.getId(), user.getRole());
     }
@@ -120,7 +130,9 @@ public class AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found from token"));
 
-        String newToken = jwtUtil.generateToken(user.getEmail());
+        String newToken = jwtUtil.generateToken(user.getEmail(), user.getId(), user.getRole());
         return new AuthResponse(newToken, user.getId(), user.getRole());
     }
+
+    // Helper removed as Feign clients handle headers directly
 }
