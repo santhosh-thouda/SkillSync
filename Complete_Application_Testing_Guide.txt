@@ -1,0 +1,1345 @@
+SKILLSYNC COMPLETE APPLICATION TESTING GUIDE
+============================================
+
+Project Root
+------------
+C:\Users\santh\Advance_Java_MicroServices\SkillSync
+
+
+1. WHAT THIS GUIDE COVERS
+-------------------------
+Use this file to test:
+- Application startup
+- Configurations
+- Secrets and environment variables
+- Eureka registration
+- API Gateway routing
+- Swagger/OpenAPI endpoints
+- Authentication and JWT security
+- CRUD APIs
+- Validation and global exception handling
+- RabbitMQ-based session events
+- Docker deployment files
+- Unit/integration test commands
+
+
+2. SERVICES AND PORTS
+---------------------
+- API Gateway: 8080
+- Auth Service: 8081
+- User Service: 8082
+- Mentor Service: 8083
+- Skill Service: 8084
+- Session Service: 8085
+- Group Service: 8086
+- Review Service: 8087
+- Notification Service: 8088
+- Eureka Server: 8761
+- PostgreSQL: 5432
+- RabbitMQ: 5672
+- RabbitMQ Management UI: 15672
+
+
+3. IMPORTANT FILES TO CHECK
+---------------------------
+- Root deployment guide:
+  C:\Users\santh\Advance_Java_MicroServices\SkillSync\README-DEPLOYMENT.md
+
+- Docker compose:
+  C:\Users\santh\Advance_Java_MicroServices\SkillSync\docker-compose.yml
+
+- Env template:
+  C:\Users\santh\Advance_Java_MicroServices\SkillSync\.env.example
+
+- Auth security:
+  C:\Users\santh\Advance_Java_MicroServices\SkillSync\auth-service\src\main\java\com\capgemini\auth\config\SecurityConfig.java
+  C:\Users\santh\Advance_Java_MicroServices\SkillSync\auth-service\src\main\java\com\capgemini\auth\security\JwtAuthenticationFilter.java
+  C:\Users\santh\Advance_Java_MicroServices\SkillSync\auth-service\src\main\java\com\capgemini\auth\security\JwtUtil.java
+
+- Service-level JWT/OpenAPI security:
+  user-service/.../config/SecurityConfig.java
+  user-service/.../config/OpenApiConfig.java
+  user-service/.../security/JwtAuthenticationFilter.java
+  user-service/.../security/AccessControlService.java
+  mentor-service/.../config/SecurityConfig.java
+  mentor-service/.../config/OpenApiConfig.java
+  mentor-service/.../security/JwtAuthenticationFilter.java
+  mentor-service/.../security/AccessControlService.java
+  skill-service/.../config/SecurityConfig.java
+  skill-service/.../config/OpenApiConfig.java
+  session-service/.../config/SecurityConfig.java
+  session-service/.../config/OpenApiConfig.java
+  session-service/.../security/AccessControlService.java
+  group-service/.../config/SecurityConfig.java
+  group-service/.../config/OpenApiConfig.java
+  group-service/.../security/AccessControlService.java
+  review-service/.../config/SecurityConfig.java
+  review-service/.../config/OpenApiConfig.java
+  review-service/.../security/AccessControlService.java
+
+- Global exception handlers:
+  auth-service/.../exception/GlobalExceptionHandler.java
+  user-service/.../exception/GlobalExceptionHandler.java
+  mentor-service/.../exception/GlobalExceptionHandler.java
+  skill-service/.../exception/GlobalExceptionHandler.java
+  session-service/.../exception/GlobalExceptionHandler.java
+  group-service/.../exception/GlobalExceptionHandler.java
+  review-service/.../exception/GlobalExceptionHandler.java
+
+- Mapper classes:
+  group-service/.../mapper/GroupMapper.java
+  user-service/.../mapper/UserMapper.java
+  mentor-service/.../mapper/MentorMapper.java
+  skill-service/.../mapper/SkillMapper.java
+  review-service/.../mapper/ReviewMapper.java
+  session-service/.../mapper/SessionMapper.java
+
+
+4. PRE-REQUISITES
+-----------------
+Install or verify:
+- Java 21+
+- Maven
+- PostgreSQL
+- RabbitMQ
+- Docker Desktop, if using containers
+
+Optional local services:
+- Start PostgreSQL on port 5432
+- Start RabbitMQ on port 5672
+- Start Eureka before other services
+
+
+5. SECRETS AND CONFIGURATION TESTING
+------------------------------------
+Secrets are now env-backed.
+
+Check these property patterns in each application.properties:
+- spring.datasource.url=${...}
+- spring.datasource.username=${...}
+- spring.datasource.password=${...}
+- jwt.secret=${...}
+- spring.rabbitmq.password=${...}
+- spring.mail.password=${...}
+
+Files to verify:
+- auth-service\src\main\resources\application.properties
+- user-service\src\main\resources\application.properties
+- mentor-service\src\main\resources\application.properties
+- skill-service\src\main\resources\application.properties
+- session-service\src\main\resources\application.properties
+- group-service\src\main\resources\application.properties
+- review-service\src\main\resources\application.properties
+- notification-service\src\main\resources\application.properties
+- api-gateway\src\main\resources\application.properties
+
+Local env variables to test:
+- DB_HOST
+- DB_PORT
+- DB_NAME
+- DB_USERNAME
+- DB_PASSWORD
+- JWT_SECRET
+- JWT_EXPIRATION
+- EUREKA_SERVER_URL
+- RABBITMQ_HOST
+- RABBITMQ_PORT
+- RABBITMQ_USERNAME
+- RABBITMQ_PASSWORD
+- MAIL_HOST
+- MAIL_PORT
+- MAIL_USERNAME
+- MAIL_PASSWORD
+
+Quick check:
+1. Run without env vars and confirm local defaults still work.
+2. Override one service DB name or JWT secret through env vars and confirm startup still succeeds.
+3. IMPORTANT: use the same JWT_SECRET value in auth-service, user-service, mentor-service,
+   skill-service, session-service, group-service, and review-service.
+4. If JWT_SECRET differs across services, login may work in auth-service but protected
+   downstream requests will fail with 401/403.
+
+
+6. STARTUP ORDER FOR LOCAL MANUAL TESTING
+-----------------------------------------
+Recommended order:
+1. Eureka Server
+2. PostgreSQL
+3. RabbitMQ
+4. Auth Service
+5. User Service
+6. Mentor Service
+7. Skill Service
+8. Session Service
+9. Group Service
+10. Review Service
+11. Notification Service
+12. API Gateway
+
+
+7. HOW TO START EACH SERVICE LOCALLY
+------------------------------------
+Run inside each module folder:
+- mvn spring-boot:run
+
+Examples:
+- cd auth-service
+- mvn spring-boot:run
+
+- cd user-service
+- mvn spring-boot:run
+
+
+8. EUREKA TESTING
+-----------------
+URL:
+- http://localhost:8761
+
+Verify:
+- All services appear in Eureka dashboard after startup
+- AUTH-SERVICE
+- USER-SERVICE
+- MENTOR-SERVICE
+- SKILL-SERVICE
+- SESSION-SERVICE
+- GROUP-SERVICE
+- REVIEW-SERVICE
+- NOTIFICATION-SERVICE
+- API-GATEWAY
+
+
+9. SWAGGER / OPENAPI TESTING
+----------------------------
+Swagger UI URLs:
+- http://localhost:8080/swagger-ui.html
+- http://localhost:8081/swagger-ui.html
+- http://localhost:8082/swagger-ui.html
+- http://localhost:8083/swagger-ui.html
+- http://localhost:8084/swagger-ui.html
+- http://localhost:8085/swagger-ui.html
+- http://localhost:8086/swagger-ui.html
+- http://localhost:8087/swagger-ui.html
+
+API docs URLs:
+- http://localhost:8080/v3/api-docs
+- http://localhost:8081/v3/api-docs
+- http://localhost:8082/v3/api-docs
+- http://localhost:8083/v3/api-docs
+- http://localhost:8084/v3/api-docs
+- http://localhost:8085/v3/api-docs
+- http://localhost:8086/v3/api-docs
+- http://localhost:8087/v3/api-docs
+
+Check:
+1. Swagger UI opens without 404
+2. Endpoints are listed
+3. API docs JSON loads successfully
+4. Service-level Swagger UIs for auth/user/mentor/skill/session/group/review should show
+   the Authorize button because bearer JWT support is configured in OpenAPI
+5. Use Authorize with:
+   Bearer <jwt-token>
+6. If Authorize does not appear, restart the service and refresh Swagger UI
+7. Prefer testing secured APIs from the service Swagger UIs directly
+8. Gateway Swagger availability is still useful for route/docs checks, but role-based
+   access testing should be done against the downstream service Swagger UIs
+
+
+10. AUTH SERVICE TESTING
+------------------------
+Base URL direct:
+- http://localhost:8081
+
+Gateway URL:
+- http://localhost:8080/auth
+
+Endpoints:
+- POST /auth/register
+- POST /auth/login
+- POST /auth/refresh
+
+Register request:
+POST http://localhost:8080/auth/register
+Content-Type: application/json
+
+{
+  "name": "Test User",
+  "email": "testuser@example.com",
+  "password": "Password123",
+  "role": "LEARNER"
+}
+
+Expected:
+- 201 Created
+- "User registered successfully"
+
+Login request:
+POST http://localhost:8080/auth/login
+
+{
+  "email": "testuser@example.com",
+  "password": "Password123"
+}
+
+Expected:
+- 200 OK
+- token returned
+- userId returned
+- role returned
+
+Refresh request:
+POST http://localhost:8080/auth/refresh
+
+{
+  "token": "PASTE_LOGIN_TOKEN"
+}
+
+Expected:
+- 200 OK
+- new token returned
+
+JWT claim expectations:
+- token contains subject = user email
+- token contains userId claim
+- token contains role claim
+- these claims are used by downstream services for authorization and ownership checks
+
+Validation tests:
+- blank email
+- invalid email
+- blank password
+- missing role
+
+Expected:
+- 400 Bad Request
+- response body contains validationErrors
+
+Security filter test:
+1. Call protected endpoint without Authorization header
+2. Expect 401 or access denied
+3. Call same protected endpoint with:
+   Authorization: Bearer <jwt-token>
+4. Expect request to pass
+
+
+10A. ROLE / ACCESS CONTROL MATRIX
+---------------------------------
+Use at least these three users for manual testing:
+- ADMIN user
+- LEARNER user
+- MENTOR user
+
+Intended access rules currently implemented:
+- ADMIN:
+  full access to protected user, mentor, skill, session, group, and review operations
+- LEARNER:
+  can read/update/delete own user profile
+  can create own group and join/leave only as self
+  can create review only with own userId
+  can request session only with own learnerId
+  can cancel own session
+  can read own learner sessions
+- MENTOR:
+  can apply for mentor profile only with own userId
+  can update/delete own mentor profile
+  can accept/reject/complete own mentor sessions
+  can read own mentor sessions
+  can create skills
+
+Expected security status codes:
+- 401 when Authorization header is missing or token is invalid
+- 403 when token is valid but role or ownership is wrong
+
+
+11. USER SERVICE TESTING
+------------------------
+Preferred direct URL:
+- http://localhost:8082/users
+
+Gateway URL:
+- http://localhost:8080/users
+
+Endpoints:
+- GET /users
+- GET /users/{id}
+- GET /users/email/{email}
+- POST /users
+- PUT /users/{id}
+- DELETE /users/{id}
+
+Authorization rules:
+- GET /users -> ADMIN only
+- GET /users/{id} -> ADMIN or same user only
+- GET /users/email/{email} -> ADMIN or same user only
+- POST /users -> ADMIN or same authenticated user during sync-style creation
+- PUT /users/{id} -> ADMIN or same user only
+- DELETE /users/{id} -> ADMIN or same user only
+
+Positive tests:
+1. Login as learner and authorize in Swagger
+2. GET /users/{learnerId}
+   Expected: 200 OK
+3. PUT /users/{learnerId}
+   Expected: 200 OK
+4. Login as admin
+5. GET /users
+   Expected: 200 OK
+
+Negative tests:
+1. Login as learner
+2. GET /users/{someOtherUserId}
+   Expected: 403 Forbidden
+3. GET /users
+   Expected: 403 Forbidden
+4. Call any protected user endpoint without token
+   Expected: 401 Unauthorized
+5. GET non-existing ID with valid authorization
+   Expected: 404 with message, status, error, path
+
+
+
+12. MENTOR SERVICE TESTING
+--------------------------
+Preferred direct URL:
+- http://localhost:8083/mentors
+
+Gateway URL:
+- http://localhost:8080/mentors
+
+Endpoints:
+- POST /mentors/apply
+- GET /mentors
+- GET /mentors/{id}
+- PUT /mentors/{id}/availability
+- PUT /mentors/{id}/approve
+- DELETE /mentors/{id}
+
+Authorization rules:
+- POST /mentors/apply -> ADMIN or MENTOR acting on own userId
+- GET /mentors and GET /mentors/{id} -> any authenticated user
+- PUT /mentors/{id}/availability -> ADMIN or owning mentor only
+- PUT /mentors/{id}/approve -> ADMIN only
+- DELETE /mentors/{id} -> ADMIN or owning mentor only
+
+Positive tests:
+1. Login as mentor and authorize
+2. POST /mentors/apply with userId = logged-in mentor userId
+   Expected: 201 Created
+3. PUT /mentors/{ownMentorId}/availability
+   Expected: 200 OK
+4. Login as admin
+5. PUT /mentors/{mentorId}/approve
+   Expected: 200 OK
+
+Negative tests:
+1. Login as learner
+2. POST /mentors/apply
+   Expected: 403 Forbidden
+3. Login as one mentor and update another mentor's availability
+   Expected: 403 Forbidden
+
+
+13. SKILL SERVICE TESTING
+-------------------------
+Preferred direct URL:
+- http://localhost:8084/skills
+
+Gateway URL:
+- http://localhost:8080/skills
+
+Endpoints:
+- POST /skills
+- GET /skills
+- GET /skills/{id}
+- DELETE /skills/{id}
+
+Authorization rules:
+- POST /skills -> ADMIN or MENTOR
+- GET /skills and GET /skills/{id} -> any authenticated user
+- DELETE /skills/{id} -> ADMIN only
+
+Positive tests:
+1. Login as mentor
+2. POST /skills
+   Expected: 201 Created
+3. GET /skills
+   Expected: 200 OK
+4. Login as admin
+5. DELETE /skills/{id}
+   Expected: 204 No Content
+
+Negative tests:
+1. Login as learner
+2. POST /skills
+   Expected: 403 Forbidden
+3. DELETE /skills/{id}
+   Expected: 403 Forbidden
+
+
+14. SESSION SERVICE TESTING
+---------------------------
+Preferred direct URL:
+- http://localhost:8085/sessions
+
+Gateway URL:
+- http://localhost:8080/sessions
+
+Endpoints:
+- POST /sessions
+- PUT /sessions/{id}/accept
+- PUT /sessions/{id}/reject
+- PUT /sessions/{id}/cancel
+- PUT /sessions/{id}/complete
+- GET /sessions/user/{userId}
+- GET /sessions/mentor/{mentorId}
+- DELETE /sessions/{id}
+
+Create session:
+POST /sessions
+{
+  "mentorId": 1,
+  "learnerId": 2,
+  "sessionDate": "2026-12-01T10:00:00"
+}
+
+Authorization rules:
+- POST /sessions -> ADMIN or LEARNER acting as own learnerId
+- PUT /sessions/{id}/accept -> ADMIN or owning mentor only
+- PUT /sessions/{id}/reject -> ADMIN or owning mentor only
+- PUT /sessions/{id}/cancel -> ADMIN or owning learner only
+- PUT /sessions/{id}/complete -> ADMIN or owning mentor only
+- GET /sessions/user/{userId} -> ADMIN or same learner only
+- GET /sessions/mentor/{mentorId} -> ADMIN or same mentor only
+- DELETE /sessions/{id} -> ADMIN or owning learner/mentor only
+
+Positive tests:
+1. Login as learner
+2. POST /sessions with learnerId = logged-in learner userId
+   Expected: 201 Created and status = REQUESTED
+3. GET /sessions/user/{learnerId}
+   Expected: 200 OK
+4. Login as mentor
+5. PUT /sessions/{id}/accept
+   Expected: 200 OK and status = ACCEPTED
+6. PUT /sessions/{id}/complete
+   Expected: 200 OK and status = COMPLETED
+
+Validation test:
+- Use past sessionDate
+- Expect 400 validation error
+
+Negative tests:
+1. Login as learner and call PUT /sessions/{id}/accept
+   Expected: 403 Forbidden
+2. Login as mentor and call PUT /sessions/{id}/cancel
+   Expected: 403 Forbidden
+3. Login as learner and request session with another learnerId
+   Expected: 403 Forbidden
+
+RabbitMQ behavior:
+1. Create session
+2. Accept or reject session
+3. Check RabbitMQ queue activity
+4. Check notification-service logs for event consumption
+
+
+15. GROUP SERVICE TESTING
+-------------------------
+Preferred direct URL:
+- http://localhost:8086/groups
+
+Gateway URL:
+- http://localhost:8080/groups
+
+Endpoints:
+- POST /groups
+- POST /groups/{id}/join?userId=...
+- POST /groups/{id}/leave?userId=...
+- GET /groups
+- GET /groups/{id}
+- DELETE /groups/{id}
+
+Authorization rules:
+- POST /groups -> ADMIN or same user as createdBy
+- POST /groups/{id}/join -> ADMIN or same user as query param userId
+- POST /groups/{id}/leave -> ADMIN or same user as query param userId
+- GET /groups and GET /groups/{id} -> any authenticated user
+- DELETE /groups/{id} -> ADMIN or group creator only
+
+Positive tests:
+1. Login as learner
+2. POST /groups with createdBy = logged-in learner userId
+   Expected: 201 Created
+3. POST /groups/{id}/join?userId={sameLoggedInUserId}
+   Expected: 200 OK
+4. Login as admin
+5. DELETE /groups/{id}
+   Expected: 204 No Content
+
+Negative tests:
+1. Login as learner and join group using another user's userId
+   Expected: 403 Forbidden
+2. Login as learner and delete a group created by someone else
+   Expected: 403 Forbidden
+
+
+16. REVIEW SERVICE TESTING
+--------------------------
+Preferred direct URL:
+- http://localhost:8087/reviews
+
+Gateway URL:
+- http://localhost:8080/reviews
+
+Endpoints:
+- POST /reviews
+- GET /reviews/mentor/{mentorId}
+- DELETE /reviews/{id}
+
+Create:
+POST /reviews
+{
+  "mentorId": 1,
+  "userId": 2,
+  "rating": 5,
+  "comment": "Excellent mentoring"
+}
+
+Authorization rules:
+- POST /reviews -> ADMIN or LEARNER acting as own userId
+- GET /reviews/mentor/{mentorId} -> any authenticated user
+- DELETE /reviews/{id} -> ADMIN or creator of the review only
+
+Positive tests:
+1. Login as learner
+2. POST /reviews with userId = logged-in learner userId
+   Expected: 201 Created
+3. GET /reviews/mentor/{mentorId}
+   Expected: 200 OK
+
+Negative tests:
+1. Login as learner and create review using another userId
+   Expected: 403 Forbidden
+2. Login as a different learner and delete someone else's review
+   Expected: 403 Forbidden
+
+Validation test:
+- rating = 0
+- rating = 6
+- Expect 400
+
+
+17. NOTIFICATION SERVICE TESTING
+--------------------------------
+Base URL direct:
+- http://localhost:8088
+
+Checks:
+1. Service registers in Eureka
+2. RabbitMQ connection is successful
+3. NotificationListener receives messages
+4. Mail properties are loaded from env values
+
+How to test:
+- Create or update a session in session-service
+- Watch notification-service logs
+
+Expected log examples:
+- REQUESTED event received
+- ACCEPTED event received
+- REJECTED event received
+
+
+18. API GATEWAY TESTING
+-----------------------
+Base URL:
+- http://localhost:8080
+
+Verify routes:
+- /auth/**
+- /users/**
+- /mentors/**
+- /sessions/**
+- /groups/**
+- /reviews/**
+- /skills/**
+
+Checks:
+1. Gateway starts successfully
+2. Requests route correctly to downstream services
+3. Swagger UI loads
+4. CORS works for external client if needed
+5. Gateway security is not yet the main RBAC enforcement point
+6. Do security validation primarily against downstream services
+
+
+19. GLOBAL EXCEPTION HANDLING TESTING
+-------------------------------------
+For each service, test:
+- invalid request body
+- missing required field
+- resource not found
+
+Expected standard error shape:
+{
+  "timestamp": "...",
+  "status": 400 or 404,
+  "error": "Bad Request" or "Not Found",
+  "message": "...",
+  "path": "...",
+  "validationErrors": {
+    "field": "message"
+  }
+}
+
+
+20. DTO / MAPPER TESTING
+------------------------
+Check mapper files:
+- GroupMapper
+- UserMapper
+- MentorMapper
+- SkillMapper
+- ReviewMapper
+- SessionMapper
+
+Manual verification:
+1. Create entity through API
+2. Compare returned DTO fields against DB/entity fields
+3. Ensure no internal-only fields leak accidentally
+
+Code-level verification:
+- Run unit tests for service layers using mapper-based implementations
+
+
+21. CRUD COVERAGE CHECKLIST
+---------------------------
+Auth:
+- Register
+- Login
+- Refresh
+
+User:
+- Create
+- Read one
+- Read all
+- Update
+- Delete
+
+Mentor:
+- Create/apply
+- Read one
+- Read all
+- Update availability
+- Approve
+- Delete
+
+Skill:
+- Create
+- Read one
+- Read all
+- Delete
+
+Session:
+- Create
+- Read by learner
+- Read by mentor
+- Update status
+- Delete
+
+Group:
+- Create
+- Read one
+- Read all
+- Join
+- Leave
+- Delete
+
+Review:
+- Create
+- Read by mentor
+- Delete
+
+Also cover:
+- role mismatch scenarios
+- ownership mismatch scenarios
+- Swagger Authorize flow on each secured service
+
+
+22. JWT SECURITY CHECKLIST
+--------------------------
+Check:
+1. /auth/** is public
+2. Protected endpoints require token
+3. Valid bearer token is accepted
+4. Invalid bearer token is rejected
+5. Missing token is rejected
+6. Token carries email, userId, and role claims
+7. Same JWT_SECRET is configured in auth-service and all secured downstream services
+8. Swagger Authorize button appears on secured service Swagger UIs
+9. Authenticated user with wrong role gets 403
+10. Authenticated user with correct role but wrong resource ownership gets 403
+
+Header format:
+Authorization: Bearer <token>
+
+Swagger format:
+1. Open service Swagger UI
+2. Click Authorize
+3. Enter:
+   Bearer <token>
+4. Execute secured requests
+
+
+23. TEST COMMANDS FOR MODULES
+-----------------------------
+Run these in project root one by one:
+
+- cd auth-service && mvn test
+- cd user-service && mvn test
+- cd mentor-service && mvn test
+- cd skill-service && mvn test
+- cd session-service && mvn test
+- cd group-service && mvn test
+- cd review-service && mvn test
+- cd notification-service && mvn test
+- cd api-gateway && mvn test
+- cd eureka-server && mvn test
+
+
+24. DOCKER TESTING
+------------------
+Files:
+- .env.example
+- docker-compose.yml
+- docker/postgres/init-multiple-dbs.sh
+- each service Dockerfile
+
+What Docker is used for in this project:
+1. Start infrastructure quickly
+2. Build and run microservices in isolated containers
+3. Start PostgreSQL, RabbitMQ, Eureka, gateway, and services together
+4. Test the same env-driven configuration that would be used in deployment
+
+Prepare Docker Desktop:
+1. Open Docker Desktop and wait until it shows "Engine running"
+2. Open terminal in project root:
+   C:\Users\santh\Advance_Java_MicroServices\SkillSync
+3. Check Docker:
+   - docker --version
+   - docker compose version
+4. If Docker Desktop is not running, containers will not start
+
+Prepare environment file:
+1. Copy .env.example to .env
+2. Open .env and review:
+   - DB_USERNAME
+   - DB_PASSWORD
+   - JWT_SECRET
+   - JWT_EXPIRATION
+   - EUREKA_SERVER_URL
+   - RABBITMQ_USERNAME
+   - RABBITMQ_PASSWORD
+   - MAIL_USERNAME
+   - MAIL_PASSWORD
+3. Keep localhost-based defaults unless you intentionally want different values
+4. Make sure DB password in .env matches the password expected by docker-compose and service configs
+
+Important Docker files:
+1. docker-compose.yml
+   - defines all containers and port mappings
+2. docker/postgres/init-multiple-dbs.sh
+   - creates the multiple PostgreSQL databases used by the services
+3. Each service Dockerfile
+   - builds the image for that microservice
+
+Main Docker commands:
+1. Build and start everything:
+   - docker compose up --build
+2. Start in detached mode:
+   - docker compose up --build -d
+3. See running containers:
+   - docker ps
+4. See all compose services:
+   - docker compose ps
+5. Stop everything:
+   - docker compose down
+6. Stop and remove volumes also:
+   - docker compose down -v
+7. Rebuild from scratch:
+   - docker compose down -v
+   - docker compose up --build
+
+Recommended first full Docker run:
+1. docker compose down -v
+2. docker compose up --build
+3. Watch logs carefully during startup
+4. Wait until:
+   - postgres is healthy
+   - rabbitmq is healthy
+   - eureka-server starts
+   - microservices register with eureka
+   - api-gateway starts
+
+What success should look like:
+1. docker compose ps shows containers in Up state
+2. PostgreSQL container is running
+3. RabbitMQ container is running
+4. Eureka is reachable at http://localhost:8761
+5. Gateway is reachable at http://localhost:8080
+6. Swagger works through gateway at http://localhost:8080/swagger-ui/index.html
+
+If one service fails in Docker:
+1. Check container logs:
+   - docker compose logs auth-service
+   - docker compose logs api-gateway
+   - docker compose logs session-service
+2. Common reasons:
+   - wrong DB password
+   - RabbitMQ not ready yet
+   - Eureka not ready yet
+   - wrong env var in .env
+   - port already in use on host machine
+
+How to test after Docker startup:
+1. Open Eureka:
+   - http://localhost:8761
+2. Open RabbitMQ UI:
+   - http://localhost:15672
+3. Open gateway Swagger:
+   - http://localhost:8080/swagger-ui/index.html
+4. Test docs through gateway:
+   - http://localhost:8080/auth/v3/api-docs
+   - http://localhost:8080/users/v3/api-docs
+   - http://localhost:8080/mentors/v3/api-docs
+   - http://localhost:8080/skills/v3/api-docs
+   - http://localhost:8080/sessions/v3/api-docs
+   - http://localhost:8080/groups/v3/api-docs
+   - http://localhost:8080/reviews/v3/api-docs
+
+Docker verification checklist:
+1. Containers start successfully
+2. PostgreSQL databases are created
+3. RabbitMQ UI opens at http://localhost:15672
+4. Eureka opens at http://localhost:8761
+5. Gateway opens at http://localhost:8080
+6. Swagger UIs open through gateway
+7. APIs work through gateway
+8. Session events reach RabbitMQ
+9. Notification service consumes session events
+
+
+25. DATABASE TESTING
+--------------------
+Databases expected:
+- auth_db
+- user_db
+- mentor_db
+- skill_db
+- session_db
+- group_db
+- review_db
+
+Check:
+1. Tables created automatically by JPA
+2. Data inserted after API calls
+3. Deletes really remove data
+4. Updates persist correctly
+
+
+26. RABBITMQ TESTING
+--------------------
+UI:
+- http://localhost:15672
+
+Credentials:
+- guest / guest by default
+  or values from .env
+
+What RabbitMQ is doing in this project:
+1. session-service publishes session-related events
+2. notification-service consumes those events
+3. this is how async notifications are tested
+
+Quick RabbitMQ Docker commands from CMD:
+1. Start RabbitMQ directly with docker run:
+   - docker run -d --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3-management
+2. List running containers:
+   - docker ps
+3. Open RabbitMQ management UI:
+   - http://localhost:15672
+4. Login with default credentials:
+   - guest / guest
+
+If container name "rabbitmq" already exists:
+1. Start existing container:
+   - docker start rabbitmq
+2. Or remove old container first:
+   - docker rm -f rabbitmq
+3. Then run again:
+   - docker run -d --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3-management
+
+How to start RabbitMQ manually without Docker:
+1. Start RabbitMQ service in Windows Services if installed locally
+2. Or run RabbitMQ from Docker only:
+   - docker compose up rabbitmq -d
+3. Open management UI:
+   - http://localhost:15672
+
+Exact CMD commands to start RabbitMQ in Docker:
+1. Open Command Prompt
+2. Go to project root:
+   - cd C:\Users\santh\Advance_Java_MicroServices\SkillSync
+3. Start only RabbitMQ container:
+   - docker compose up rabbitmq -d
+4. Check whether RabbitMQ container is running:
+   - docker compose ps
+5. See RabbitMQ logs:
+   - docker compose logs rabbitmq
+6. Open RabbitMQ UI in browser:
+   - http://localhost:15672
+7. Login with:
+   - guest
+   - guest
+   or credentials from .env
+8. Stop only RabbitMQ:
+   - docker compose stop rabbitmq
+9. Start it again later:
+   - docker compose start rabbitmq
+10. Remove RabbitMQ container:
+   - docker compose rm -f rabbitmq
+
+Exact CMD commands if you want RabbitMQ plus PostgreSQL together:
+1. cd C:\Users\santh\Advance_Java_MicroServices\SkillSync
+2. docker compose up postgres rabbitmq -d
+3. docker compose ps
+4. docker compose logs rabbitmq
+5. docker compose logs postgres
+
+Exact CMD commands if Docker Compose service name does not work:
+1. Build and start full stack:
+   - docker compose up --build -d
+2. Then verify RabbitMQ:
+   - docker compose ps
+   - docker compose logs rabbitmq
+
+How to confirm RabbitMQ is running:
+1. Login to http://localhost:15672
+2. Open the "Overview" tab
+3. Open the "Connections" tab
+4. Open the "Channels" tab
+5. Open the "Queues" tab
+
+What to check in session-service config:
+1. application.properties contains:
+   - spring.rabbitmq.host
+   - spring.rabbitmq.port
+   - spring.rabbitmq.username
+   - spring.rabbitmq.password
+   - rabbitmq.exchange
+   - rabbitmq.queue
+   - rabbitmq.routingkey
+
+How queue, exchange, and routing key are configured in this project:
+1. Open:
+   - C:\Users\santh\Advance_Java_MicroServices\SkillSync\session-service\src\main\resources\application.properties
+2. Check these properties:
+   - rabbitmq.exchange
+   - rabbitmq.queue
+   - rabbitmq.routingkey
+3. These values are used by session-service when publishing messages
+4. notification-service should listen to the same queue/binding setup
+
+Meaning of each RabbitMQ property:
+1. Exchange
+   - receives messages from the producer
+2. Routing key
+   - decides how the message is routed
+3. Queue
+   - stores the routed message until a consumer reads it
+
+How to add queue, exchange, and routing key in configuration:
+1. In application.properties of the producer/consumer service add:
+   - rabbitmq.exchange=session.exchange
+   - rabbitmq.queue=session.queue
+   - rabbitmq.routingkey=session.routingkey
+2. In Java RabbitMQ config class, bind them together
+3. Producer publishes to:
+   - exchange + routing key
+4. Consumer listens on:
+   - queue
+
+Example RabbitMQ property configuration:
+   rabbitmq.exchange=session.exchange
+   rabbitmq.queue=session.queue
+   rabbitmq.routingkey=session.routingkey
+
+How they work together:
+1. session-service sends message to exchange:
+   - session.exchange
+2. using routing key:
+   - session.routingkey
+3. RabbitMQ routes the message to queue:
+   - session.queue
+4. notification-service consumes from:
+   - session.queue
+
+How to verify in RabbitMQ UI:
+1. Open:
+   - http://localhost:15672
+2. Login:
+   - guest / guest
+3. Go to "Exchanges" tab
+4. Confirm exchange exists
+5. Go to "Queues and Streams" tab
+6. Confirm queue exists
+7. Open queue details
+8. Check bindings and routing key
+
+What to do if queue/exchange is missing:
+1. Start session-service
+2. Start notification-service
+3. Check RabbitMQ config class and properties
+4. Trigger a session API call
+5. Refresh RabbitMQ UI
+
+What to check in notification-service config:
+1. RabbitMQ host, port, user, password values are correct
+2. Listener starts without connection failure
+3. Logs do not show authentication or broker errors
+
+RabbitMQ end-to-end test flow:
+1. Start rabbitmq
+2. Start session-service
+3. Start notification-service
+4. Create a session through API
+5. Accept or reject the session through API
+6. Watch RabbitMQ UI and notification-service logs
+
+Example flow:
+1. POST /sessions
+2. PUT /sessions/{id}/accept
+3. or PUT /sessions/{id}/reject
+
+Expected RabbitMQ behavior:
+1. A message is published by session-service
+2. Exchange receives/routs message
+3. Queue receives message
+4. notification-service listener consumes message
+
+Expected application behavior:
+1. session-service logs show publishing event
+2. notification-service logs show event consumption
+3. if email is configured, mail sending logic is triggered
+
+Check:
+1. Queue exists
+2. Exchange exists
+3. Binding exists
+4. Session event messages are published
+5. Notification service consumes them
+
+If RabbitMQ testing fails:
+1. Check whether port 5672 is in use
+2. Check whether management UI is reachable on 15672
+3. Check username and password
+4. Check queue/exchange names in properties
+5. Check session-service logs for publisher errors
+6. Check notification-service logs for listener errors
+7. Check whether RabbitMQ started before the services
+
+Useful RabbitMQ test observations:
+1. If messages appear but are not consumed, notification-service may be down
+2. If no messages appear, session-service may not be publishing
+3. If login to management UI fails, credentials in .env or compose are wrong
+
+
+26A. HOW TO USE DOCKER COMPOSE WITH RABBITMQ, POSTGRES, AND SERVICES
+--------------------------------------------------------------------
+Use this if you want the full project stack in one command.
+
+Step 1:
+- Open Docker Desktop
+
+Step 2:
+- Open terminal in:
+  C:\Users\santh\Advance_Java_MicroServices\SkillSync
+
+Step 3:
+- Make sure .env exists
+
+Step 4:
+- Start full stack:
+  docker compose up --build
+
+Step 5:
+- Wait until logs show:
+  - postgres ready
+  - rabbitmq ready
+  - eureka-server started
+  - auth-service started
+  - user-service started
+  - mentor-service started
+  - skill-service started
+  - session-service started
+  - group-service started
+  - review-service started
+  - notification-service started
+  - api-gateway started
+
+Step 6:
+- Open and verify:
+  - http://localhost:8761
+  - http://localhost:15672
+  - http://localhost:8080/swagger-ui/index.html
+
+Step 7:
+- Run API tests from Swagger or Postman
+
+Step 8:
+- Perform one session create or accept action
+
+Step 9:
+- Watch:
+  - rabbitmq queues
+  - notification-service logs
+
+Step 10:
+- Stop everything when done:
+  docker compose down
+
+
+26B. HOW TO USE RABBITMQ DURING TESTING
+---------------------------------------
+You do not call RabbitMQ directly from Swagger.
+
+Instead:
+1. Call session-service APIs
+2. session-service publishes event messages automatically
+3. notification-service consumes those messages automatically
+
+Typical usage during testing:
+1. Start rabbitmq
+2. Start session-service
+3. Start notification-service
+4. Create a session
+5. Accept, reject, cancel, or complete a session
+6. Check whether a message was produced and consumed
+
+What you should monitor:
+1. session-service console logs
+2. notification-service console logs
+3. RabbitMQ management UI queues tab
+4. RabbitMQ connections and channels tabs
+
+
+27. FILE-BY-FILE FUNCTIONAL CHECKLIST
+-------------------------------------
+Auth module:
+- controller
+- service
+- security config
+- jwt filter
+- jwt util
+- exception handler
+- dto validation
+
+User module:
+- controller
+- service
+- mapper
+- exception handler
+- dto validation
+
+Mentor module:
+- controller
+- service
+- mapper
+- exception handler
+
+Skill module:
+- controller
+- service
+- mapper
+- exception handler
+
+Session module:
+- controller
+- service
+- mapper
+- message publisher
+- rabbit config
+- exception handler
+
+Group module:
+- controller
+- service
+- mapper
+- exception handler
+
+Review module:
+- controller
+- service
+- mapper
+- exception handler
+
+Notification module:
+- listener
+- rabbit config
+- mail config
+
+Gateway:
+- route config
+- security config
+- swagger config through dependency
+
+Eureka:
+- service discovery server startup
+
+
+28. RECOMMENDED END-TO-END FLOW TEST
+------------------------------------
+1. Start all services
+2. Open Eureka
+3. Open Swagger for auth-service and the downstream secured services
+4. Register learner, mentor, and admin test users through auth as needed
+5. Login and save JWT for each role
+6. Use Swagger Authorize in user-service, mentor-service, skill-service, session-service,
+   group-service, and review-service
+7. As mentor or admin, create skill
+8. As mentor, apply for mentor profile using own userId
+9. As learner, request session using own learnerId
+10. As mentor, accept session
+11. Check RabbitMQ and notification logs
+12. As learner, create review using own userId
+13. As learner, create group using own createdBy
+14. As learner, join and leave group as self
+15. Run negative tests for wrong role and wrong ownership and confirm 403
+16. Delete created test records as allowed role
+
+
+29. IF SOMETHING FAILS
+----------------------
+Check:
+- service logs
+- Eureka registration
+- DB credentials
+- RabbitMQ status
+- JWT secret
+- route URLs through gateway
+- Swagger endpoint availability
+- Docker env values
+
+
+30. SUMMARY
+-----------
+This application can now be tested through:
+- direct service URLs
+- API gateway URLs
+- Swagger UI with JWT Authorize on secured services
+- Maven tests
+- Docker Compose
+- manual DB and RabbitMQ verification
+- role-based authorization checks
+- ownership-based access control checks
+
+Use this file as your main QA runbook for SkillSync.
