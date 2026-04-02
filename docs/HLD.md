@@ -224,7 +224,7 @@ In a microservices world, maintaining data consistency without distributed trans
 
 ---
 
-## 12. Fault Tolerance & Recovery
+## 12. Fault Tolerance & Recovery 
 The system is designed to "fail fast" and "recover gracefully."
 
 ### 12.1 Failure Scenarios

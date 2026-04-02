@@ -1,0 +1,191 @@
+SKILLSYNC ARCHITECTURE MANUAL
+============================
+
+This manual provides a comprehensive overview of the SkillSync microservices architecture, including security, design patterns, and deployment strategies.
+
+TABLE OF CONTENTS
+-----------------
+1. Spring Security & JWT Guide
+2. Exception Handling Guide
+3. Dependency Injection Guide
+4. Layered Architecture Guide
+5. RabbitMQ Event-Driven Communication
+6. Docker Deployment Guide
+7. Distributed Patterns: Saga & Outbox
+8. Full Architecture & Access Control Flow
+
+================================================================================
+1. SPRING SECURITY & JWT GUIDE
+================================================================================
+
+This guide explains how security is implemented in the SkillSync microservices architecture using Spring Security and JSON Web Tokens (JWT).
+
+1.1 What is Spring Security?
+Spring Security is a powerful and highly customizable authentication and access-control framework for Java applications. It is the de-facto standard for securing Spring-based applications.
+
+In SkillSync, it handles:
+- Authentication: Verifying "who you are" (Login).
+- Authorization: Verifying "what you are allowed to do" (Roles like ADMIN, MENTOR, LEARNER).
+- Protection: Handling CORS, CSRF, and securing internal API endpoints.
+
+1.2 What is JWT (JSON Web Token)?
+JWT is an open standard (RFC 7519) that defines a compact and self-contained way for securely transmitting information between parties as a JSON object.
+
+- Compact: Can be sent via URL, POST parameter, or inside an HTTP header.
+- Self-contained: The payload contains all the required information about the user, avoiding the need to query the database more than once.
+- Signed: Tokens are digitally signed using a secret key, so they cannot be tampered with.
+
+1.3 How it Works (The Concept)
+Instead of the server keeping a "Session" (stateful), it gives the client a "Token" (stateless).
+1. Login: User provides email/password.
+2. Token Issuance: Server verifies credentials and signs a JWT with a secret key.
+3. Storage: Client stores the token (e.g., in LocalStorage or a Cookie).
+4. Usage: For every request, the client sends the token in the Authorization header.
+5. Verification: The server checks the signature. If valid, it trusts the identity in the token.
+
+1.4 Implementation in SkillSync
+
+A. Auth Service (auth-service)
+This is the "Identity Provider".
+- SecurityConfig: Defines the security rules for the auth service itself.
+- JwtUtil: The core utility class that generates tokens, validates tokens, and extracts info.
+- CustomUserDetailsService: Loads user data from the database to verify passwords.
+
+B. Other Microservices (e.g., user-service, mentor-service)
+These are "Resource Servers".
+- JwtAuthenticationFilter: An interceptor that runs before every request to extract the token.
+- JwtTokenService: A service used by the filter to parse and validate the token.
+- SecurityConfig: Ensures that all endpoints require a valid authentication token.
+
+C. API Gateway (api-gateway)
+- Acts as the entry point. Currently permits all traffic through, but can be configured to validate tokens.
+
+1.5 The Security Flow
+
+Phase 1: Authentication (Login)
+1. Request: Client sends POST /auth/login with credentials to the Gateway.
+2. Routing: Gateway sends it to auth-service.
+3. Validation: auth-service checks the database.
+4. Generation: If correct, JwtUtil creates a JWT.
+5. Response: Client receives the JWT.
+
+Phase 2: Authorized Request (Accessing Data)
+1. Request: Client sends GET /users/profile with Authorization: Bearer <TOKEN>.
+2. Routing: Gateway routes to user-service.
+3. Interception: JwtAuthenticationFilter catches the request.
+4. Verification: It uses JwtTokenService to check if the token is valid.
+5. Context: If valid, it tells Spring Security who the user is.
+6. Execution: The Controller method runs and returns data.
+
+================================================================================
+2. EXCEPTION HANDLING GUIDE
+================================================================================
+
+This guide explains how exceptions are managed across the SkillSync microservices to ensure consistent error responses.
+
+2.1 Overview
+SkillSync uses a Global Exception Handling approach using Spring Boot's @RestControllerAdvice. This allows us to intercept exceptions from any controller and transform them into a standardized format.
+
+2.2 The Standard Error Response
+Every error returned by the API follows this structure:
+{
+  "timestamp": "2026-03-27T13:20:45",
+  "status": 404,
+  "error": "Not Found",
+  "message": "User not found with id: 1",
+  "path": "/users/1",
+  "validationErrors": { ... }
+}
+
+2.3 Common Exception Types Handled
+1. ResourceNotFoundException (404): When an entity is not found in the DB.
+2. BadRequestException (400): For invalid business logic requests.
+3. MethodArgumentNotValidException (400): For @Valid bean validation failures.
+4. Generic Exception (500): A fallback for any unexpected errors.
+
+================================================================================
+3. DEPENDENCY INJECTION GUIDE
+================================================================================
+
+This guide explains how Dependency Injection (DI) is utilized in the SkillSync project.
+
+3.1 Primary DI Pattern: Constructor Injection
+The SkillSync project uses Constructor Injection as the primary way to provide dependencies. This is done via Lombok's @RequiredArgsConstructor and 'final' fields.
+
+3.2 Stereotype Annotations
+- @RestController: For handling HTTP requests.
+- @Service: For business logic.
+- @Repository: For database interactions.
+- @Component: For generic Spring-managed beans.
+
+3.3 Manual Bean Definitions (@Bean)
+Used for objects we didn't write ourselves (like RestTemplate). Defined in @Configuration classes.
+
+================================================================================
+4. LAYERED ARCHITECTURE GUIDE
+================================================================================
+
+This guide explains the architectural design of the SkillSync microservices.
+
+4.1 The Core Layers
+- API/Controller Layer (controller/): Handles HTTP requests.
+- Service Layer (service/): Contains Business Logic.
+- Data Access/Repository Layer (repository/): Handles DB interactions (Spring Data JPA).
+- Domain/Entity Layer (entity/): Represents DB tables as Java objects.
+
+4.2 Supporting Layers
+- DTO Layer (dto/): Data objects used for API communication.
+- Mapper Layer (mapper/): Conversion between Entities and DTOs.
+
+================================================================================
+5. RABBITMQ EVENT-DRIVEN COMMUNICATION
+================================================================================
+
+This guide explains how RabbitMQ is used for asynchronous communication.
+
+5.1 The Flow
+1. Producer (session-service): Sends a SessionEvent when a status changes.
+2. Broker (RabbitMQ): Routes the event using an Exchange and Routing Key.
+3. Consumer (notification-service): Listens for events and simulates sending emails.
+
+================================================================================
+6. DOCKER DEPLOYMENT GUIDE
+================================================================================
+
+This guide explains how to containerize and deploy SkillSync services.
+
+6.1 The Dockerfile
+SkillSync uses Multi-Stage Builds:
+- Stage 1: Maven build to create the JAR.
+- Stage 2: Minimal JRE runtime to execute the JAR.
+
+6.2 Docker Compose
+Use 'docker-compose up --build -d' from the root to start the entire infrastructure (DB, RabbitMQ, Discovery, and all 10+ services).
+
+================================================================================
+7. DISTRIBUTED PATTERNS: SAGA & OUTBOX
+================================================================================
+
+7.1 Saga Pattern (Choreography)
+Used in the Registration Flow. The Auth Service coordinates profile creation in User/Mentor services. If downstream fails, it rolls back by deleting the Auth record.
+
+7.2 Outbox Pattern
+A candidate for future implementation to guarantee message delivery even when RabbitMQ is temporarily unavailable.
+
+================================================================================
+8. FULL ARCHITECTURE & ACCESS CONTROL FLOW
+================================================================================
+
+SkillSync follows a Zero-Trust approach. Every request is verified.
+
+8.1 Three Layers of Access Control
+1. Authentication: JWT verification in JwtAuthenticationFilter.
+2. RBAC: hasRole('ADMIN') checks on controllers.
+3. Fine-Grained Ownership: Custom checks in AccessControlService (e.g., @accessControlService.isCurrentUser(#id)).
+
+8.2 Sequence Flow
+Client -> Gateway -> Microservice Filter (Auth) -> Controller (@PreAuthorize check) -> AccessControlService (Fine-grained) -> Service logic -> Database.
+
+================================================================================
+END OF MANUAL
+================================================================================
