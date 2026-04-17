@@ -10,6 +10,8 @@ echo Waiting for Base Services to initialize...
 timeout /t 10
 
 echo Starting Backend Microservices...
+start cmd /k "cd config-server && mvn spring-boot:run -Dspring-boot.run.jvmArguments="-Xmx192m -Xms64m -XX:MaxMetaspaceSize=128m -XX:+UseSerialGC""
+timeout /t 25
 start cmd /k "cd auth-service && mvn spring-boot:run -Dspring-boot.run.jvmArguments="-Xmx192m -Xms64m -XX:MaxMetaspaceSize=128m -XX:+UseSerialGC""
 start cmd /k "cd user-service && mvn spring-boot:run -Dspring-boot.run.jvmArguments="-Xmx192m -Xms64m -XX:MaxMetaspaceSize=128m -XX:+UseSerialGC""
 start cmd /k "cd mentor-service && mvn spring-boot:run -Dspring-boot.run.jvmArguments="-Xmx192m -Xms64m -XX:MaxMetaspaceSize=128m -XX:+UseSerialGC""
