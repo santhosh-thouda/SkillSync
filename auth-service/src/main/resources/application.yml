@@ -1,0 +1,17 @@
+spring:
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: santhoshthouda7576@gmail.com
+    password: "mfkp weoa msyc rqao"
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+app:
+  mail:
+    from: santhoshthouda7576@gmail.com
+    otp-expiry-minutes: 10

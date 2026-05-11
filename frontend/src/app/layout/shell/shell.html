@@ -1,0 +1,160 @@
+<div class="app-shell min-h-screen">
+
+  <!-- Mobile Backdrop -->
+  <div class="sidebar-backdrop" *ngIf="isMobileMenuOpen()" (click)="closeMobileMenu()"></div>
+
+  <!-- ── Sidebar ──────────────────────────────────────────────── -->
+  <aside class="app-sidebar" [class.mobile-open]="isMobileMenuOpen()">
+
+    <!-- Brand -->
+    <a routerLink="/dashboard" class="brand-lockup" aria-label="SkillSync home" (click)="closeMobileMenu()">
+      <span class="brand-mark">
+        <mat-icon>school</mat-icon>
+      </span>
+      <span>
+        <span class="brand-name">SkillSync</span>
+        <span class="brand-caption">Learning OS</span>
+      </span>
+    </a>
+
+    <!-- Nav -->
+    <nav class="app-nav" aria-label="Primary navigation">
+
+      <a routerLink="/dashboard" routerLinkActive="nav-active"
+         [routerLinkActiveOptions]="{exact:true}" class="nav-link" (click)="closeMobileMenu()">
+        <mat-icon class="nav-icon">dashboard</mat-icon>
+        <span>Dashboard</span>
+      </a>
+
+      <a routerLink="/mentors" routerLinkActive="nav-active"
+         *ngIf="!store.isAdmin() && !store.isMentor()" class="nav-link" (click)="closeMobileMenu()">
+        <mat-icon class="nav-icon">search</mat-icon>
+        <span>Find Mentors</span>
+      </a>
+
+      <a routerLink="/sessions" routerLinkActive="nav-active"
+         [routerLinkActiveOptions]="{exact:true}"
+         *ngIf="!store.isAdmin()" class="nav-link" (click)="closeMobileMenu()">
+        <mat-icon class="nav-icon">calendar_today</mat-icon>
+        <span>Book Session</span>
+      </a>
+
+      <a routerLink="/sessions/manage" routerLinkActive="nav-active"
+         *ngIf="!store.isAdmin()" class="nav-link" (click)="closeMobileMenu()">
+        <mat-icon class="nav-icon">manage_history</mat-icon>
+        <span>Manage Sessions</span>
+      </a>
+
+      <a routerLink="/groups" routerLinkActive="nav-active"
+         *ngIf="!store.isAdmin()" class="nav-link" (click)="closeMobileMenu()">
+        <mat-icon class="nav-icon">group</mat-icon>
+        <span>Learning Groups</span>
+      </a>
+
+      <a routerLink="/reviews" routerLinkActive="nav-active"
+         *ngIf="!store.isAdmin()" class="nav-link" (click)="closeMobileMenu()">
+        <mat-icon class="nav-icon">reviews</mat-icon>
+        <span>{{ store.isMentor() ? 'My Reviews' : 'Reviews' }}</span>
+      </a>
+
+      <span class="nav-divider" *ngIf="store.isAdmin()"></span>
+
+      <a routerLink="/admin" routerLinkActive="nav-active"
+         *ngIf="store.isAdmin()" class="nav-link" (click)="closeMobileMenu()">
+        <mat-icon class="nav-icon">admin_panel_settings</mat-icon>
+        <span>Admin Console</span>
+      </a>
+
+      <!-- Secondary Links (Mobile only) -->
+      <div class="mobile-only-links">
+        <span class="nav-divider"></span>
+        
+        <a routerLink="/" class="nav-link" (click)="closeMobileMenu()">
+          <mat-icon class="nav-icon">home</mat-icon>
+          <span>Home</span>
+        </a>
+        
+        <a routerLink="/about" class="nav-link" (click)="closeMobileMenu()">
+          <mat-icon class="nav-icon">info</mat-icon>
+          <span>About</span>
+        </a>
+        
+        <a routerLink="/contact" class="nav-link" (click)="closeMobileMenu()">
+          <mat-icon class="nav-icon">mail</mat-icon>
+          <span>Contact</span>
+        </a>
+      </div>
+
+    </nav>
+
+    <!-- Role card -->
+    <div class="role-card">
+      <span class="role-icon">
+        <mat-icon>{{ store.isAdmin() ? 'admin_panel_settings' : store.isMentor() ? 'co_present' : 'school' }}</mat-icon>
+      </span>
+      <span>
+        <span class="role-label">{{ store.user()?.name || 'User' }}</span>
+        <span class="role-caption">{{ store.roleLabel() }}</span>
+      </span>
+    </div>
+
+  </aside>
+
+  <!-- ── Main ─────────────────────────────────────────────────── -->
+  <div class="app-main">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <!-- Hamburger Menu Toggle -->
+        <button class="mobile-menu-toggle" (click)="toggleMobileMenu()" aria-label="Toggle menu">
+          <mat-icon>{{ isMobileMenuOpen() ? 'close' : 'menu' }}</mat-icon>
+        </button>
+
+        <div class="topbar-links">
+          <a routerLink="/" class="topbar-link">Home</a>
+          <a routerLink="/about" class="topbar-link">About</a>
+          <a routerLink="/contact" class="topbar-link">Contact</a>
+        </div>
+        <div class="topbar-divider"></div>
+        <div class="topbar-status">
+          <span class="status-dot"></span>
+          <span>Workspace synced</span>
+        </div>
+      </div>
+
+      <div class="account-actions">
+        <!-- Theme toggle -->
+        <button class="icon-action theme-toggle"
+                (click)="theme.toggle()"
+                [matTooltip]="theme.isDark() ? 'Switch to light mode' : 'Switch to dark mode'">
+          <mat-icon>{{ theme.isDark() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+        </button>
+
+        <!-- User info -->
+        <div class="account-copy">
+          <span class="account-greeting">Hello,</span>
+          <span class="account-name">{{ store.user()?.name }}</span>
+          <span class="account-role">{{ store.roleLabel() }}</span>
+        </div>
+
+        <!-- Profile -->
+        <a routerLink="/profile" class="profile-link-top" matTooltip="My Profile">
+          <img [src]="store.user()?.profileImage || ('https://api.dicebear.com/7.x/initials/svg?seed=' + store.user()?.name)" 
+               alt="User" class="avatar-top">
+        </a>
+
+        <!-- Logout -->
+        <button (click)="logout()" class="icon-action danger" matTooltip="Sign out">
+          <mat-icon>logout</mat-icon>
+        </button>
+      </div>
+    </header>
+
+    <!-- Content -->
+    <main class="content-stage animated-fade-in">
+      <router-outlet></router-outlet>
+    </main>
+
+  </div>
+</div>

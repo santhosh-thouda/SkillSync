@@ -1,0 +1,135 @@
+<header class="dashboard-hero animated-slide-up">
+  <div class="hero-content">
+    <p class="eyebrow">Collaborative Learning</p>
+    <h1>SkillSync <span class="primary-text">Communities</span></h1>
+    <p class="subtitle">Join specialized learning groups, collaborate on real-world projects, and engage in real-time discussions with peers.</p>
+  </div>
+  <div class="hero-actions">
+    <button mat-flat-button class="create-btn" (click)="showCreateForm = !showCreateForm" *ngIf="!activeGroupId">
+      <mat-icon>{{ showCreateForm ? 'close' : 'add_circle' }}</mat-icon>
+      {{ showCreateForm ? 'Close Composer' : 'Start a Group' }}
+    </button>
+  </div>
+</header>
+
+<div class="groups-container animated-slide-up" style="animation-delay: 0.1s">
+  <!-- Create Group Form (Only if no active chat) -->
+  <section class="glass-panel create-panel animated-slide-up" *ngIf="showCreateForm && !activeGroupId" style="animation-delay:0.05s">
+    <div class="panel-heading">
+      <p class="eyebrow">New Community</p>
+      <h2>Launch Your Group</h2>
+    </div>
+    <form [formGroup]="createForm" (ngSubmit)="createGroup()" class="create-form">
+      <div class="form-grid">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Group Name</mat-label>
+          <input matInput formControlName="name" placeholder="e.g. Advanced Java & Microservices">
+          <mat-icon matPrefix>groups</mat-icon>
+          <mat-error *ngIf="createForm.get('name')?.hasError('required')">Required</mat-error>
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Description</mat-label>
+          <textarea matInput formControlName="description" rows="3" placeholder="Share the focus and goals of this community..."></textarea>
+          <mat-icon matPrefix>description</mat-icon>
+          <mat-error *ngIf="createForm.get('description')?.hasError('required')">Required</mat-error>
+        </mat-form-field>
+      </div>
+      <button mat-flat-button color="primary" type="submit" [disabled]="isCreating" class="submit-btn">
+        <mat-spinner *ngIf="isCreating" diameter="18"></mat-spinner>
+        <mat-icon *ngIf="!isCreating">rocket_launch</mat-icon>
+        {{ isCreating ? 'Initializing Group...' : 'Create Group' }}
+      </button>
+    </form>
+  </section>
+
+  <!-- Main layout: grid OR chat -->
+  <div class="main-layout-grid">
+    <!-- Sidebar (Hidden when chat is active) -->
+    <aside class="sidebar-controls" *ngIf="!activeGroupId">
+      <article class="glass-panel search-card">
+        <div class="card-header-flex">
+          <div>
+            <p class="eyebrow">Discovery</p>
+            <h2>Find Groups</h2>
+          </div>
+          <mat-icon>search</mat-icon>
+        </div>
+        <form [formGroup]="filterForm">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Search communities</mat-label>
+            <input matInput formControlName="search" placeholder="Enter keywords...">
+          </mat-form-field>
+        </form>
+      </article>
+
+      <article class="glass-panel stats-card" *ngIf="!isLoading">
+        <div class="stat-item">
+          <span class="val">{{ groups.length }}</span>
+          <span class="lbl">Active Groups</span>
+        </div>
+        <div class="stat-item">
+          <span class="val">{{ joinedCount }}</span>
+          <span class="lbl">Joined</span>
+        </div>
+      </article>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="groups-feed" [class.chat-active]="activeGroupId">
+      <div *ngIf="isLoading" class="loading-state-main">
+        <mat-spinner diameter="48"></mat-spinner>
+        <p>Synchronizing communities...</p>
+      </div>
+
+      <div class="feed-layout" *ngIf="!isLoading">
+        <!-- Chat View (Replaces grid) -->
+        <div class="chat-viewport animated-slide-up" *ngIf="activeGroupId && activeGroup">
+          <app-group-chat
+            [groupId]="activeGroupId"
+            [groupName]="activeGroup.name"
+            [group]="activeGroup"
+            (onClose)="activeGroupId = null">
+          </app-group-chat>
+        </div>
+
+        <!-- Groups Grid (Hidden when chat active) -->
+        <div class="group-grid" *ngIf="!activeGroupId">
+          <article class="group-card glass-panel animated-slide-up" *ngFor="let group of filteredGroups; let i = index" [style.animation-delay]="(0.15 + (i * 0.05)) + 's'">
+            <div class="card-accent" [style.background]="getGroupGradient(group.id)"></div>
+            <div class="card-content">
+              <div class="card-top">
+                <div class="group-icon-box">
+                  <mat-icon>forum</mat-icon>
+                </div>
+                <span class="member-count">
+                  <mat-icon>people</mat-icon>
+                  {{ group.members.length || 0 }}
+                </span>
+              </div>
+              
+              <h3>{{ group.name }}</h3>
+              <p class="description">{{ group.description | slice:0:100 }}{{ group.description.length > 100 ? '...' : '' }}</p>
+              
+              <div class="card-footer">
+                <button mat-flat-button class="action-btn chat" *ngIf="isJoined(group)" (click)="openChat(group)">
+                  <mat-icon>chat</mat-icon>
+                  Chat
+                </button>
+                <button mat-flat-button class="action-btn join" [class.joined]="isJoined(group)" (click)="toggleJoin(group)">
+                  <mat-icon>{{ isJoined(group) ? 'logout' : 'login' }}</mat-icon>
+                  {{ isJoined(group) ? 'Leave' : 'Join' }}
+                </button>
+              </div>
+            </div>
+          </article>
+
+          <div class="empty-state-full glass-panel" *ngIf="filteredGroups.length === 0">
+            <mat-icon>diversity_2</mat-icon>
+            <h3>No groups found</h3>
+            <p>Try adjusting your search criteria or create a new community!</p>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>

@@ -13,6 +13,8 @@ import java.util.List;
 public class MentorDto {
     private Long id;
     private Long userId;
+    private String name;
+    private Double earnings;
     private String bio;
     private Integer experience;
     private Double rating;

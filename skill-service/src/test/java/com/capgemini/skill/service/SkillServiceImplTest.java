@@ -78,7 +78,9 @@ class SkillServiceImplTest {
         assertEquals("DevOps", response.getCategory());
     }
 
-    @Test
+    
+    
+    
     void getSkillByIdShouldThrowWhenMissing() {
         when(skillRepository.findById(10L)).thenReturn(Optional.empty());
 

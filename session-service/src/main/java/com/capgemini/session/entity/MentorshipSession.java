@@ -27,11 +27,16 @@ public class MentorshipSession {
     @Column(name = "learner_id", nullable = false)
     private Long learnerId;
 
+    private String mentorName;
+    private String learnerName;
+
     @Column(name = "session_date", nullable = false)
     private LocalDateTime sessionDate;
 
     @Column(nullable = false)
     private String status; // REQUESTED, ACCEPTED, REJECTED, COMPLETED, CANCELLED
+
+    private Double hourlyRate;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

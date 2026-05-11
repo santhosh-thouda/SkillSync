@@ -1,6 +1,8 @@
 package com.capgemini.user.security;
 
 import com.capgemini.user.dto.UserDto;
+import com.capgemini.user.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
@@ -8,11 +10,22 @@ import java.util.Locale;
 import java.util.Objects;
 
 @Component
+@RequiredArgsConstructor
 public class AccessControlService {
+
+    private final UserRepository userRepository;
 
     public boolean isCurrentUser(Long id, Authentication authentication) {
         JwtPrincipal principal = getPrincipal(authentication);
-        return principal != null && Objects.equals(principal.userId(), id);
+        if (principal == null) {
+            return false;
+        }
+        if (Objects.equals(principal.userId(), id)) {
+            return true;
+        }
+        return userRepository.findById(id)
+                .map(user -> user.getEmail().equalsIgnoreCase(principal.email()))
+                .orElse(false);
     }
 
     public boolean hasEmail(Authentication authentication, String email) {
@@ -37,6 +50,9 @@ public class AccessControlService {
 
     private String normalizeRole(String role) {
         String normalizedRole = role == null ? "" : role.trim().toUpperCase(Locale.ROOT);
+        if (normalizedRole.startsWith("ROLE_")) {
+            normalizedRole = normalizedRole.substring(5);
+        }
         return "USER".equals(normalizedRole) ? "LEARNER" : normalizedRole;
     }
 }

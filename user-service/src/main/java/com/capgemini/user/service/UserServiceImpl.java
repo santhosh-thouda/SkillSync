@@ -39,11 +39,12 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserDto createUser(UserDto request) {
         log.info("Creating new user with email: {}", request.getEmail());
-        User user = new User();
+        User user = userRepository.findByEmail(request.getEmail()).orElseGet(User::new);
         user.setName(request.getName());
         user.setEmail(request.getEmail());
         user.setRole(request.getRole());
         user.setPassword("N/A"); 
+        user.setProfileImage(request.getProfileImage());
         User savedUser = userRepository.save(user);
         log.info("Successfully created user with id: {}", savedUser.getId());
         return userMapper.toDto(savedUser);

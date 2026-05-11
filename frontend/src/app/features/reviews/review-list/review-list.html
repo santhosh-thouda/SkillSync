@@ -1,0 +1,160 @@
+<header class="dashboard-hero animated-slide-up">
+  <div class="hero-content">
+    <p class="eyebrow">Trust & Feedback</p>
+    <h1>Platform <span class="primary-text">Reviews</span></h1>
+    <p class="subtitle">Gain insights from fellow learners and share your mentorship experiences to build a better community.</p>
+  </div>
+  <div class="hero-meta" *ngIf="selectedMentor">
+    <div class="rating-display">
+      <div class="stars">
+        <mat-icon *ngFor="let _ of ratingStars">star</mat-icon>
+      </div>
+      <span class="avg">{{ averageRating }} Rating</span>
+    </div>
+  </div>
+</header>
+<nav class="review-tabs animated-slide-up" *ngIf="store.isMentor()">
+  <button [class.active]="activeTab === 'my'" (click)="setTab('my')">
+    <mat-icon>grade</mat-icon> My Reviews
+  </button>
+  <button [class.active]="activeTab === 'browse'" (click)="setTab('browse')">
+    <mat-icon>explore</mat-icon> Other Mentors
+  </button>
+</nav>
+
+<div class="reviews-grid animated-slide-up" style="animation-delay: 0.1s">
+  <!-- Sidebar: Configuration & Selection -->
+  <aside class="sidebar-actions">
+    <article class="glass-panel selection-card" *ngIf="activeTab === 'browse' || !store.isMentor()">
+      <div class="card-header-flex">
+        <div>
+          <p class="eyebrow">Browse</p>
+          <h2>Filter by Mentor</h2>
+        </div>
+        <mat-icon color="primary">person_search</mat-icon>
+      </div>
+
+      <form [formGroup]="reviewForm" class="filter-form">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Select Mentor</mat-label>
+          <mat-select formControlName="mentorId" (selectionChange)="onMentorChange($event.value)">
+            <mat-option *ngFor="let mentor of mentors" [value]="mentor.id">
+              {{ mentor.name || ('Mentor #' + mentor.id) }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </form>
+    </article>
+
+    <article class="glass-panel composer-card" *ngIf="store.isLearner(); else reviewReadOnly">
+      <div class="card-header-flex">
+        <div>
+          <p class="eyebrow">Composer</p>
+          <h2>Leave a Review</h2>
+        </div>
+        <mat-icon color="primary">rate_review</mat-icon>
+      </div>
+
+      <form [formGroup]="reviewForm" class="review-form" (ngSubmit)="submitReview()">
+        <div class="rating-picker">
+          <label>How would you rate the experience?</label>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-select formControlName="rating">
+              <mat-option [value]="5">5 - Exceptional</mat-option>
+              <mat-option [value]="4">4 - Great</mat-option>
+              <mat-option [value]="3">3 - Good</mat-option>
+              <mat-option [value]="2">2 - Fair</mat-option>
+              <mat-option [value]="1">1 - Poor</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Your Feedback</mat-label>
+          <textarea matInput formControlName="comment" rows="4" placeholder="What did you learn? How was the mentor's communication?"></textarea>
+          <mat-hint align="end">{{ reviewForm.get('comment')?.value?.length || 0 }} / 8 min</mat-hint>
+        </mat-form-field>
+
+        <button mat-flat-button color="primary" class="submit-btn" [disabled]="isSubmitting || reviewForm.invalid">
+          <mat-icon *ngIf="!isSubmitting">send</mat-icon>
+          <mat-spinner diameter="18" *ngIf="isSubmitting"></mat-spinner>
+          {{ isSubmitting ? 'Submitting...' : 'Post Review' }}
+        </button>
+      </form>
+      
+      <p class="status-msg" [class.success]="statusMessage.includes('success')" *ngIf="statusMessage">{{ statusMessage }}</p>
+    </article>
+
+    <ng-template #reviewReadOnly>
+      <article class="glass-panel info-card">
+        <mat-icon class="info-icon">info</mat-icon>
+        <p>Review submission is currently restricted to learner accounts. Use the selector above to browse feedback.</p>
+      </article>
+    </ng-template>
+  </aside>
+
+  <!-- Main: Review Feed -->
+  <main class="feed-container">
+    <section class="mentor-spotlight glass-panel animated-slide-up" *ngIf="selectedMentor" style="animation-delay: 0.15s">
+      <div class="spotlight-header">
+        <img [src]="'https://api.dicebear.com/7.x/initials/svg?seed=' + selectedMentor.name" alt="Avatar" class="mentor-avatar">
+        <div class="mentor-info">
+          <h3>{{ selectedMentor.name }}</h3>
+          <div class="skill-chips">
+            <span class="skill-tag" *ngFor="let skill of selectedMentor.skills | slice:0:3">{{ skillLabel(skill) }}</span>
+          </div>
+        </div>
+        <div class="spotlight-stats">
+          <div class="stat-item">
+            <span class="val">{{ averageRating }}</span>
+            <span class="lbl">Avg Rating</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <span class="val">{{ reviews.length }}</span>
+            <span class="lbl">Total Reviews</span>
+          </div>
+        </div>
+      </div>
+      <p class="mentor-bio">{{ selectedMentor.bio || 'This mentor provides expert guidance in their listed skills.' }}</p>
+    </section>
+
+    <section class="review-feed">
+      <div class="feed-title-row">
+        <h2>Recent Feedback</h2>
+        <span class="count">{{ reviews.length }} Reviews</span>
+      </div>
+
+      <div class="reviews-list" *ngIf="!isFeedLoading; else loadingState">
+        <article class="review-card glass-panel animated-slide-up" *ngFor="let review of reviews; let i = index; trackBy: trackByReviewId" [style.animation-delay]="(0.2 + (i * 0.05)) + 's'">
+          <div class="card-top">
+            <div class="user-meta">
+              <img [src]="'https://api.dicebear.com/7.x/avataaars/svg?seed=' + review.userId" alt="Learner" class="user-avatar">
+              <div class="user-details">
+                <h4>{{ review.userName || ('Learner #' + review.userId) }}</h4>
+                <p>{{ review.createdAt | date:'longDate' }}</p>
+              </div>
+            </div>
+            <div class="review-rating">
+              <mat-icon *ngFor="let _ of [1,2,3,4,5]; let idx = index" [class.filled]="idx < review.rating">star</mat-icon>
+            </div>
+          </div>
+          <p class="comment">{{ review.comment }}</p>
+        </article>
+
+        <div class="empty-state glass-panel" *ngIf="reviews.length === 0">
+          <mat-icon>chat_bubble_outline</mat-icon>
+          <h3>No reviews yet</h3>
+          <p>This mentor hasn't received any feedback yet. Be the first to share your experience!</p>
+        </div>
+      </div>
+
+      <ng-template #loadingState>
+        <div class="loading-state">
+          <mat-spinner diameter="40"></mat-spinner>
+          <p>Loading community feedback...</p>
+        </div>
+      </ng-template>
+    </section>
+  </main>
+</div>

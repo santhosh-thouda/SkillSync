@@ -1,0 +1,114 @@
+<header class="dashboard-hero animated-slide-up">
+  <div class="hero-content">
+    <p class="eyebrow">Session Center</p>
+    <h1>Book a <span class="primary-text">Mentoring Session</span></h1>
+    <p class="subtitle">Directly connect with our top-tier experts. All interactions are synchronized and tracked for your learning growth.</p>
+  </div>
+  <div class="hero-decoration">
+    <mat-icon class="floating-icon">schedule_send</mat-icon>
+  </div>
+</header>
+
+<div class="booking-layout animated-slide-up" style="animation-delay: 0.1s">
+  <!-- Booking Form -->
+  <article class="glass-panel booking-form-container">
+    <div class="card-header-flex">
+      <div>
+        <p class="eyebrow">Request</p>
+        <h2>Session Details</h2>
+      </div>
+      <mat-icon color="primary">add_task</mat-icon>
+    </div>
+
+    <div *ngIf="isLoading" class="loading-overlay-simple">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p>Fetching available experts...</p>
+    </div>
+
+    <form [formGroup]="bookingForm" (ngSubmit)="submitRequest()" *ngIf="!isLoading" class="booking-form">
+      <div class="form-grid">
+        <!-- Mentor Selection -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Choose your Mentor</mat-label>
+          <mat-select formControlName="mentorId">
+            <mat-option *ngFor="let mentor of mentors" [value]="mentor.id">
+              {{ mentor.name || ('Mentor #' + mentor.id) }} — {{ mentorSkillSummary(mentor) }}
+            </mat-option>
+          </mat-select>
+          <mat-icon matPrefix>person</mat-icon>
+        </mat-form-field>
+
+        <!-- Topic Selection -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Learning Focus / Topic</mat-label>
+          <input matInput formControlName="topic" placeholder="e.g. System Design, Angular Architecture" [matAutocomplete]="autoTopic">
+          <mat-icon matPrefix>psychology</mat-icon>
+          <mat-autocomplete #autoTopic="matAutocomplete">
+            <mat-option *ngFor="let topic of filteredTopics | async" [value]="topic">{{ topic }}</mat-option>
+          </mat-autocomplete>
+        </mat-form-field>
+
+        <!-- Date Selection -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Preferred Date</mat-label>
+          <input matInput [matDatepicker]="picker" formControlName="sessionDate" [min]="minDate" readonly>
+          <mat-datepicker-toggle matIconPrefix [for]="picker"></mat-datepicker-toggle>
+          <mat-datepicker #picker></mat-datepicker>
+          <mat-icon matSuffix>calendar_month</mat-icon>
+        </mat-form-field>
+
+        <!-- Notes -->
+        <mat-form-field appearance="outline" class="full-width notes-field">
+          <mat-label>Additional Context (Optional)</mat-label>
+          <textarea matInput formControlName="notes" rows="4" placeholder="Describe what you'd like to achieve in this session..."></textarea>
+          <mat-icon matPrefix>description</mat-icon>
+        </mat-form-field>
+      </div>
+
+      <button mat-flat-button color="primary" type="submit" class="submit-btn" [disabled]="isSubmitting || bookingForm.invalid">
+        <mat-spinner *ngIf="isSubmitting" diameter="18"></mat-spinner>
+        <mat-icon *ngIf="!isSubmitting">bolt</mat-icon>
+        {{ isSubmitting ? 'Sending Request...' : 'Send Booking Request' }}
+      </button>
+    </form>
+  </article>
+
+  <!-- Recent History Sidebar -->
+  <aside class="history-sidebar">
+    <article class="glass-panel history-card">
+      <div class="card-header-flex">
+        <div>
+          <p class="eyebrow">Tracking</p>
+          <h2>My Recent Sessions</h2>
+        </div>
+        <mat-icon>history_edu</mat-icon>
+      </div>
+
+      <div *ngIf="nextSessions.length === 0" class="empty-state-sidebar">
+        <mat-icon>event_busy</mat-icon>
+        <p>No session history yet.</p>
+        <p class="hint">Book your first session today!</p>
+      </div>
+
+      <div class="session-feed" *ngIf="nextSessions.length > 0">
+        <article class="session-mini-card" *ngFor="let s of nextSessions | slice:0:6">
+          <div class="status-indicator" [ngClass]="getStatusClass(s.status)"></div>
+          <div class="mini-content">
+            <h4>{{ s.topic || 'Mentorship' }}</h4>
+            <div class="meta-row">
+              <span>{{ getMentorName(s.mentorId) }}</span>
+              <span class="dot">&bull;</span>
+              <span>{{ s.sessionDate | date:'MMM d' }}</span>
+            </div>
+          </div>
+          <span class="status-badge-mini" [ngClass]="getStatusClass(s.status)">{{ s.status }}</span>
+        </article>
+      </div>
+      
+      <button mat-stroked-button color="primary" class="view-all-btn" routerLink="/sessions/manage">
+        Manage All Sessions
+        <mat-icon>arrow_forward</mat-icon>
+      </button>
+    </article>
+  </aside>
+</div>

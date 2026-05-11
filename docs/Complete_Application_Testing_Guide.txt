@@ -25,6 +25,7 @@ Use this file to test:
 
 2. SERVICES AND PORTS
 ---------------------
+- Config Server: 8888
 - API Gateway: 8080
 - Auth Service: 8081
 - User Service: 8082
@@ -164,8 +165,8 @@ Quick check:
 -----------------------------------------
 Recommended order:
 1. Eureka Server
-2. PostgreSQL
-3. RabbitMQ
+2. PostgreSQL & RabbitMQ
+3. Config Server
 4. Auth Service
 5. User Service
 6. Mentor Service
@@ -175,6 +176,15 @@ Recommended order:
 10. Review Service
 11. Notification Service
 12. API Gateway
+
+7. CONFIG SERVER TESTING
+-------------------------
+URL:
+- http://localhost:8888/auth-service/dev
+
+Verify:
+- The Config Server retrieves properties from the local `config-repo` via Git.
+- Confirm JSON properties are returned matching the `dev` profile.
 
 
 7. HOW TO START EACH SERVICE LOCALLY
@@ -338,6 +348,19 @@ Intended access rules currently implemented:
   can request session only with own learnerId
   can cancel own session
   can read own learner sessions
+
+
+10B. DEFAULT ADMIN CREDENTIALS
+------------------------------
+Login as the system administrator using these credentials:
+- Email: admin@skillsync.com
+- Password: useradmin123
+
+This user is automatically created during Auth Service startup!
+Use this account to:
+- Approve mentors
+- Manage global skills catalog
+- View system health metrics
 - MENTOR:
   can apply for mentor profile only with own userId
   can update/delete own mentor profile

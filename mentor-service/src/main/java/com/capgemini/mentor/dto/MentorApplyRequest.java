@@ -12,6 +12,8 @@ public class MentorApplyRequest {
     @NotNull(message = "User ID is required")
     private Long userId;
     
+    private String name;
+    
     private String bio;
     
     @Min(value = 0, message = "Experience cannot be negative")

@@ -13,6 +13,9 @@ public class SessionDto {
     private Long id;
     private Long mentorId;
     private Long learnerId;
+    private String mentorName;
+    private String learnerName;
+    private Double hourlyRate;
     private LocalDateTime sessionDate;
     private String status;
     private LocalDateTime createdAt;

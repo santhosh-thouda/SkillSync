@@ -21,7 +21,12 @@ public class SessionMessagePublisher {
     private String routingKey;
 
     public void publishSessionEvent(SessionEvent event) {
-        log.info("Publishing session event: {}", event);
-        rabbitTemplate.convertAndSend(exchange, routingKey, event);
+        try {
+            log.info("Publishing session event: {}", event);
+            rabbitTemplate.convertAndSend(exchange, routingKey, event);
+        } catch (Exception e) {
+            // RabbitMQ is optional — log and continue so session operations are not blocked
+            log.warn("Failed to publish session event (RabbitMQ may be unavailable): {}", e.getMessage());
+        }
     }
 }

@@ -23,7 +23,7 @@ public class UserController {
     public ResponseEntity<UserDto> getUserById(@PathVariable Long id) {
         return ResponseEntity.ok(userService.getUserById(id));
     }
-
+ 
     @GetMapping("/email/{email}")
     @PreAuthorize("hasRole('ADMIN') or @accessControlService.hasEmail(authentication, #email)")
     public ResponseEntity<UserDto> getUserByEmail(@PathVariable String email) {

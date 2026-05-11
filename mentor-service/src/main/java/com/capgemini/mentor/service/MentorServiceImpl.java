@@ -3,6 +3,7 @@ package com.capgemini.mentor.service;
 import com.capgemini.mentor.dto.AvailabilityUpdateRequest;
 import com.capgemini.mentor.dto.MentorApplyRequest;
 import com.capgemini.mentor.dto.MentorDto;
+import com.capgemini.mentor.dto.MentorUpdateRequest;
 import com.capgemini.mentor.entity.Mentor;
 import com.capgemini.mentor.exception.ResourceNotFoundException;
 import com.capgemini.mentor.mapper.MentorMapper;
@@ -22,17 +23,28 @@ public class MentorServiceImpl implements MentorService {
 
     @Override
     public MentorDto applyForMentor(MentorApplyRequest request) {
-        // Here we could add logic to check if user exists (e.g., via FeignClient)
-        // or check if a mentor profile already exists for the user.
-        
-        Mentor mentor = Mentor.builder()
-                .userId(request.getUserId())
-                .bio(request.getBio())
-                .experience(request.getExperience())
-                .hourlyRate(request.getHourlyRate())
-                .skills(request.getSkills())
-                .available(true)
-                .build();
+        Mentor mentor = mentorRepository.findByUserId(request.getUserId())
+                .orElseGet(() -> Mentor.builder()
+                        .userId(request.getUserId())
+                        .available(true)
+                        .approved(false)
+                        .build());
+
+        if (request.getName() != null) {
+            mentor.setName(request.getName());
+        }
+        if (request.getBio() != null) {
+            mentor.setBio(request.getBio());
+        }
+        if (request.getExperience() != null) {
+            mentor.setExperience(request.getExperience());
+        }
+        if (request.getHourlyRate() != null) {
+            mentor.setHourlyRate(request.getHourlyRate());
+        }
+        if (request.getSkills() != null) {
+            mentor.setSkills(request.getSkills());
+        }
                 
         Mentor savedMentor = mentorRepository.save(mentor);
         return mentorMapper.toDto(savedMentor);
@@ -53,6 +65,30 @@ public class MentorServiceImpl implements MentorService {
     }
 
     @Override
+    public MentorDto getMentorByUserId(Long userId) {
+        Mentor mentor = mentorRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Mentor not found with user id: " + userId));
+        return mentorMapper.toDto(mentor);
+    }
+
+    @Override
+    public MentorDto updateMentor(Long id, MentorUpdateRequest request) {
+        Mentor mentor = mentorRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Mentor not found with id: " + id));
+
+        mentor.setBio(request.getBio());
+        mentor.setExperience(request.getExperience());
+        mentor.setHourlyRate(request.getHourlyRate());
+        mentor.setSkills(request.getSkills());
+        if (request.getAvailable() != null) {
+            mentor.setAvailable(request.getAvailable());
+        }
+
+        Mentor updatedMentor = mentorRepository.save(mentor);
+        return mentorMapper.toDto(updatedMentor);
+    }
+
+    @Override
     public MentorDto updateAvailability(Long id, AvailabilityUpdateRequest request) {
         Mentor mentor = mentorRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Mentor not found with id: " + id));
@@ -69,6 +105,14 @@ public class MentorServiceImpl implements MentorService {
         mentor.setApproved(true);
         Mentor updatedMentor = mentorRepository.save(mentor);
         return mentorMapper.toDto(updatedMentor);
+    }
+
+    @Override
+    public MentorDto addEarnings(Long id, Double amount) {
+        Mentor mentor = mentorRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Mentor not found with id: " + id));
+        mentor.setEarnings((mentor.getEarnings() != null ? mentor.getEarnings() : 0.0) + amount);
+        return mentorMapper.toDto(mentorRepository.save(mentor));
     }
 
     @Override

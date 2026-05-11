@@ -1,0 +1,132 @@
+<div class="public-layout" [class.dark]="theme.isDark()">
+  <!-- ── Navbar ────────────────────────────────────────────────── -->
+  <nav class="pub-nav" [class.scrolled]="scrolled()">
+    <div class="nav-inner">
+      <!-- Brand -->
+      <a routerLink="/" class="nav-brand">
+        <span class="nav-brand-icon">
+          <mat-icon>school</mat-icon>
+        </span>
+        <span class="nav-brand-name">SkillSync</span>
+      </a>
+
+      <!-- Links -->
+      <div class="nav-links">
+        <a routerLink="/" routerLinkActive="nav-link-active" [routerLinkActiveOptions]="{exact:true}" class="nav-link-item">Home</a>
+        <a routerLink="/about" routerLinkActive="nav-link-active" class="nav-link-item">About</a>
+        <a routerLink="/contact" routerLinkActive="nav-link-active" class="nav-link-item">Contact</a>
+        <a routerLink="/mentors" class="nav-link-item" *ngIf="store.isAuthenticated()">Find Mentors</a>
+      </div>
+
+      <!-- Actions -->
+      <div class="nav-actions">
+        <!-- Theme Toggle -->
+        <button class="nav-theme-btn" (click)="theme.toggle()" [title]="theme.isDark() ? 'Light Mode' : 'Dark Mode'">
+          <mat-icon>{{ theme.isDark() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+        </button>
+        
+        <!-- Auth Links -->
+        <ng-container *ngIf="!store.isAuthenticated(); else authActions">
+          <a routerLink="/auth/login" class="nav-btn-ghost">Sign In</a>
+          <a routerLink="/auth/register" class="nav-btn-primary">Join for Free</a>
+        </ng-container>
+        
+        <ng-template #authActions>
+          <div class="nav-user-profile">
+            <div class="nav-user-details">
+              <span class="nav-user-greeting">Welcome,</span>
+              <span class="nav-user-name">{{ store.user()?.name }}</span>
+            </div>
+            <a routerLink="/dashboard" class="nav-btn-primary">Dashboard</a>
+          </div>
+        </ng-template>
+
+        <!-- Mobile Toggle -->
+        <button class="nav-hamburger" (click)="toggleMobileMenu()" aria-label="Menu">
+          <span [class.open]="mobileMenuOpen()"></span>
+          <span [class.open]="mobileMenuOpen()"></span>
+          <span [class.open]="mobileMenuOpen()"></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" [class.open]="mobileMenuOpen()">
+      <a routerLink="/" class="mobile-link" (click)="closeMobileMenu()">Home</a>
+      <a routerLink="/about" class="mobile-link" (click)="closeMobileMenu()">About</a>
+      <a routerLink="/contact" class="mobile-link" (click)="closeMobileMenu()">Contact</a>
+      <a routerLink="/mentors" class="mobile-link" (click)="closeMobileMenu()" *ngIf="store.isAuthenticated()">Find Mentors</a>
+      <div class="mobile-divider"></div>
+      
+      <ng-container *ngIf="!store.isAuthenticated(); else mobileAuthActions">
+        <a routerLink="/auth/login" class="mobile-link" (click)="closeMobileMenu()">Sign In</a>
+        <a routerLink="/auth/register" class="mobile-btn-primary" (click)="closeMobileMenu()">Join for Free</a>
+      </ng-container>
+      
+      <ng-template #mobileAuthActions>
+        <div class="mobile-user-greeting">
+          <span class="mobile-user-hi">Hello,</span>
+          <span class="mobile-user-name">{{ store.user()?.name }}</span>
+        </div>
+        <a routerLink="/dashboard" class="mobile-btn-primary" (click)="closeMobileMenu()">Go to Dashboard</a>
+      </ng-template>
+    </div>
+  </nav>
+
+  <!-- ── Page Content ──────────────────────────────────────── -->
+  <main class="pub-main">
+    <router-outlet></router-outlet>
+  </main>
+
+  <!-- ── Footer ────────────────────────────────────────────── -->
+  <footer class="pub-footer">
+    <div class="footer-inner">
+      <div class="footer-top">
+        <div class="footer-brand-col">
+          <a routerLink="/" class="footer-brand">
+            <span class="footer-brand-icon">
+              <mat-icon>school</mat-icon>
+            </span>
+            <span class="footer-brand-name">SkillSync</span>
+          </a>
+          <p class="footer-desc">
+            Empowering the next generation of industry experts through structured mentorship and live interactive sessions.
+          </p>
+          <div class="footer-socials">
+            <a href="#" class="social-link"><mat-icon>facebook</mat-icon></a>
+            <a href="#" class="social-link"><mat-icon>terminal</mat-icon></a>
+            <a href="#" class="social-link"><mat-icon>language</mat-icon></a>
+          </div>
+        </div>
+
+        <div class="footer-links-col">
+          <h4 class="footer-title">Platform</h4>
+          <a routerLink="/mentors" class="footer-link">Explore Mentors</a>
+          <a routerLink="/about" class="footer-link">How it Works</a>
+          <a routerLink="/auth/register" class="footer-link">Become a Mentor</a>
+        </div>
+
+        <div class="footer-links-col">
+          <h4 class="footer-title">Company</h4>
+          <a routerLink="/about" class="footer-link">About Us</a>
+          <a routerLink="/contact" class="footer-link">Contact Support</a>
+          <a href="#" class="footer-link">Privacy Policy</a>
+        </div>
+
+        <div class="footer-links-col">
+          <h4 class="footer-title">Support</h4>
+          <p class="footer-support-text">Questions? Reach out to us at:</p>
+          <a href="mailto:support@skillsync.com" class="footer-support-email">support@skillsync.com</a>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <p class="footer-copy">© 2026 SkillSync. Built with 🚀 by Santhosh.</p>
+        <div class="footer-bottom-links">
+          <a href="#">Terms</a>
+          <a href="#">Cookies</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+</div>

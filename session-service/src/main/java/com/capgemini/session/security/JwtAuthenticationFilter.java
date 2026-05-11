@@ -34,6 +34,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         JwtPrincipal principal = jwtTokenService.extractPrincipal(authHeader.substring(7));
         String role = principal.role() == null ? "USER" : principal.role().toUpperCase(Locale.ROOT);
+        if (role.startsWith("ROLE_")) {
+            role = role.substring(5);
+        }
 
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                 principal,

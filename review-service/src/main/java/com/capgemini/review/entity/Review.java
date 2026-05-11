@@ -27,6 +27,8 @@ public class Review {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
+    private String userName;
+
     @Column(nullable = false)
     private Integer rating;
 

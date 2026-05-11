@@ -1,0 +1,230 @@
+<ng-container *ngIf="isLoading()">
+  <div class="loading-overlay animated-fade-in">
+    <mat-progress-spinner mode="indeterminate" diameter="48"></mat-progress-spinner>
+    <p>Synchronizing with database...</p>
+  </div>
+</ng-container>
+
+<ng-container *ngIf="store.isAdmin(); else nonAdminDashboard">
+  <section class="dashboard-hero admin-header animated-slide-up">
+    <div class="hero-content">
+      <p class="eyebrow">Operations</p>
+      <h1>Admin Command Center</h1>
+      <p class="subtitle">Monitor platform readiness, mentor onboarding, and catalog quality.</p>
+    </div>
+  </section>
+
+  <section class="kpi-grid animated-slide-up" style="animation-delay: 0.1s">
+    <mat-card class="kpi-card glass-panel admin-kpi">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>how_to_reg</mat-icon>
+        <mat-card-title>Pending Mentors</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <h2>{{ pendingMentorsCount() }}</h2>
+        <p>Applications waiting</p>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="kpi-card glass-panel admin-kpi">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>verified_user</mat-icon>
+        <mat-card-title>Approved Mentors</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <h2>{{ approvedMentorsCount() }}</h2>
+        <p>Active experts</p>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="kpi-card glass-panel admin-kpi">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>monitor_heart</mat-icon>
+        <mat-card-title>Platform Health</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <h2>Live</h2>
+        <p>Gateway and services</p>
+      </mat-card-content>
+    </mat-card>
+  </section>
+
+  <section class="role-grid animated-slide-up" style="animation-delay: 0.18s">
+    <article class="glass-panel command-panel">
+      <div>
+        <p class="eyebrow">Review Queue</p>
+        <h2>Mentor Approvals</h2>
+        <p>Open the admin console to approve mentor applications and keep onboarding moving.</p>
+      </div>
+      <button mat-flat-button color="primary" routerLink="/admin">
+        <mat-icon>admin_panel_settings</mat-icon>
+        Open Console
+      </button>
+    </article>
+
+    <article class="glass-panel command-panel">
+      <div>
+        <p class="eyebrow">Catalog</p>
+        <h2>Skill Coverage</h2>
+        <p>Curate skills so learners can discover mentors through clean, searchable topics.</p>
+      </div>
+      <button mat-stroked-button color="primary" routerLink="/admin">
+        <mat-icon>category</mat-icon>
+        Manage Skills
+      </button>
+    </article>
+  </section>
+</ng-container>
+
+<ng-template #nonAdminDashboard>
+  <div class="dashboard-hero animated-slide-up" [class.mentor-hero]="store.isMentor()">
+    <div class="hero-content">
+      <p class="eyebrow">{{ store.isMentor() ? 'Mentor Workspace' : 'Learning Hub' }}</p>
+      <h1>
+        {{ store.isMentor() ? 'Guide your learners' : 'Welcome back' }},
+        <span class="primary-text">{{ store.user()?.name || 'User' }}</span>
+      </h1>
+      <div class="hero-footer-flex">
+        <p class="subtitle">{{ store.isMentor() ? 'Manage requests, upcoming sessions, and your public mentor presence.' : 'Find mentors, track sessions, and keep your learning rhythm visible.' }}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="kpi-grid animated-slide-up" style="animation-delay: 0.1s">
+    <mat-card class="glass-panel kpi-card" *ngIf="store.isMentor()">
+      <div class="kpi-icon-wrap pending">
+        <mat-icon>pending_actions</mat-icon>
+      </div>
+      <div class="kpi-info">
+        <h3>{{ pendingSessionsCount() }}</h3>
+        <p>Pending Requests</p>
+      </div>
+    </mat-card>
+
+    <mat-card class="glass-panel kpi-card">
+      <div class="kpi-icon-wrap upcoming">
+        <mat-icon>event</mat-icon>
+      </div>
+      <div class="kpi-info">
+        <h3>{{ upcomingSessionsCount() }}</h3>
+        <p>Upcoming Sessions</p>
+      </div>
+    </mat-card>
+
+    <mat-card class="glass-panel kpi-card">
+      <div class="kpi-icon-wrap completed">
+        <mat-icon>{{ store.isMentor() ? 'star' : 'workspace_premium' }}</mat-icon>
+      </div>
+      <div class="kpi-info">
+        <h3>{{ store.isMentor() ? (ownMentorProfile()?.rating || 4.8) : completedSessionsCount() }}</h3>
+        <p>{{ store.isMentor() ? 'Average Rating' : 'Sessions Finished' }}</p>
+      </div>
+    </mat-card>
+
+    <mat-card class="glass-panel kpi-card" *ngIf="store.isMentor()">
+      <div class="kpi-icon-wrap earnings">
+        <mat-icon>payments</mat-icon>
+      </div>
+      <div class="kpi-info">
+        <h3>${{ ownMentorProfile()?.earnings || 0 }}</h3>
+        <p>Current Earnings</p>
+      </div>
+    </mat-card>
+
+    <mat-card class="glass-panel kpi-card" *ngIf="store.isMentor()">
+      <div class="kpi-icon-wrap status" [class.off]="ownMentorProfile()?.available === false">
+        <mat-icon>toggle_on</mat-icon>
+      </div>
+      <div class="kpi-info">
+        <h3>{{ ownMentorProfile()?.available === false ? 'Off' : 'On' }}</h3>
+        <p>Availability</p>
+      </div>
+    </mat-card>
+  </div>
+
+  <div class="dashboard-main-grid animated-slide-up" style="animation-delay: 0.2s">
+    <!-- Schedule Section -->
+    <mat-card class="glass-panel schedule-card">
+      <div class="card-header-premium">
+        <h2>{{ store.isMentor() ? 'Teaching Schedule' : 'Upcoming Sessions' }}</h2>
+        <mat-icon>calendar_today</mat-icon>
+      </div>
+      <mat-card-content>
+        <div class="session-list" *ngIf="sessions().length > 0; else emptySessions">
+          <div class="session-row" *ngFor="let session of sessions() | slice:0:5">
+            <div class="session-date">
+              <span class="day">{{ session.sessionDate | date:'dd' }}</span>
+              <span class="month">{{ session.sessionDate | date:'MMM' }}</span>
+            </div>
+            <div class="session-details">
+              <h4>{{ session.topic || 'General Mentorship' }}</h4>
+              <p>
+                With {{ store.isMentor() ? (session.learnerName || 'Learner #' + session.learnerId) : (session.mentorName || 'Mentor #' + session.mentorId) }} 
+                · {{ session.sessionDate | date:'shortTime' }}
+              </p>
+            </div>
+            <span class="status-badge" [ngClass]="session.status.toLowerCase()">{{ session.status }}</span>
+          </div>
+        </div>
+        <ng-template #emptySessions>
+          <div class="empty-state-simple">
+            <mat-icon>event_busy</mat-icon>
+            <p>No upcoming sessions scheduled yet.</p>
+          </div>
+        </ng-template>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Sidebar Section -->
+    <div class="side-content">
+      <!-- Mentor Profile Card -->
+      <article class="glass-panel profile-summary-card" *ngIf="store.isMentor(); else learnerDiscovery">
+        <div class="profile-header">
+          <img [src]="store.user()?.profileImage || ('https://api.dicebear.com/7.x/initials/svg?seed=' + store.user()?.name)" alt="Avatar" class="profile-avatar">
+          <div class="profile-meta">
+            <h3>{{ store.user()?.name }}</h3>
+            <span class="status-pill" [class.approved]="ownMentorProfile()?.approved">{{ ownMentorProfile()?.approved ? 'Verified Mentor' : 'Awaiting Approval' }}</span>
+          </div>
+        </div>
+        <p class="profile-bio">{{ ownMentorProfile()?.bio || 'Your mentor profile introduces your expertise and teaching style.' }}</p>
+        <div class="skill-cloud">
+          <span class="skill-tag" *ngFor="let skill of ownMentorProfile()?.skills || ['Java', 'Spring', 'Cloud']">{{ skill }}</span>
+        </div>
+        <button mat-flat-button color="primary" routerLink="/profile" class="edit-btn">
+          <mat-icon>edit_note</mat-icon>
+          Edit Profile
+        </button>
+      </article>
+
+      <!-- Recommended Mentors (for learners) -->
+      <ng-template #learnerDiscovery>
+        <div class="glass-panel discovery-card">
+          <div class="card-header-flex">
+            <h2>Top Mentors</h2>
+            <button mat-button color="primary" routerLink="/mentors">Explore All</button>
+          </div>
+          <div class="mini-mentor-list">
+            <div class="mini-mentor" *ngFor="let mentor of mentors()">
+              <img [src]="'https://api.dicebear.com/7.x/initials/svg?seed=' + mentor.name" alt="Avatar">
+              <div class="mini-info">
+                <h4>{{ mentor.name }}</h4>
+                <div class="mini-skills">
+                  <span *ngFor="let s of mentor.skills | slice:0:2">{{ s }}</span>
+                </div>
+              </div>
+              <mat-icon class="arrow">chevron_right</mat-icon>
+            </div>
+          </div>
+        </div>
+      </ng-template>
+
+      <!-- Quick Actions -->
+      <div class="quick-links" *ngIf="!store.isMentor()">
+        <a class="glass-panel link-item" *ngFor="let action of learnerFocus" [routerLink]="action.route">
+          <mat-icon>{{ action.icon }}</mat-icon>
+          <span>{{ action.label }}</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</ng-template>

@@ -1,0 +1,77 @@
+<main class="auth-page animated-fade-in">
+  <section class="auth-card animated-slide-up">
+    <aside class="auth-story">
+      <a routerLink="/auth/login" class="auth-brand" aria-label="SkillSync">
+        <span class="auth-logo"><mat-icon>school</mat-icon></span>
+        <span>SkillSync</span>
+      </a>
+
+      <div class="story-copy">
+        <p class="eyebrow">Mentorship, organized</p>
+        <h1>Build skills with the right people beside you.</h1>
+        <p>Book focused sessions, discover expert mentors, and keep your learning progress visible in one polished workspace.</p>
+      </div>
+
+      <div class="story-metrics">
+        <div>
+          <strong>1:1</strong>
+          <span>Mentoring</span>
+        </div>
+        <div>
+          <strong>Live</strong>
+          <span>Sessions</span>
+        </div>
+        <div>
+          <strong>Teams</strong>
+          <span>Groups</span>
+        </div>
+      </div>
+    </aside>
+
+    <section class="auth-form-panel">
+      <div class="auth-heading">
+        <p class="eyebrow">Welcome back</p>
+        <h2>Sign in to SkillSync</h2>
+        <p>Continue where your learning workflow left off.</p>
+      </div>
+
+      <div *ngIf="store.error()" class="auth-alert">
+        <mat-icon>error_outline</mat-icon>
+        <span>{{ store.error() }}</span>
+        <button (click)="store.clearError()" type="button" aria-label="Dismiss error">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="auth-form">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Email Address</mat-label>
+          <input matInput formControlName="email" type="email" placeholder="you@example.com">
+          <mat-icon matSuffix>email</mat-icon>
+          <mat-error *ngIf="loginForm.get('email')?.hasError('required')">Email is required</mat-error>
+          <mat-error *ngIf="loginForm.get('email')?.hasError('email')">Enter a valid email</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Password</mat-label>
+          <input matInput formControlName="password" [type]="hidePassword ? 'password' : 'text'">
+          <button mat-icon-button matSuffix (click)="hidePassword = !hidePassword" type="button" aria-label="Toggle password visibility">
+            <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
+          <mat-error *ngIf="loginForm.get('password')?.hasError('required')">Password is required</mat-error>
+        </mat-form-field>
+
+        <button type="submit" [disabled]="loginForm.invalid || store.isLoading()" class="primary-submit">
+          <mat-spinner *ngIf="store.isLoading()" diameter="18"></mat-spinner>
+          <span>{{ store.isLoading() ? 'Signing in...' : 'Sign In' }}</span>
+          <mat-icon *ngIf="!store.isLoading()">arrow_forward</mat-icon>
+        </button>
+      </form>
+
+      <p class="auth-switch">
+        Don't have an account?
+        <a routerLink="/auth/register">Create one</a>
+      </p>
+    </section>
+  </section>
+</main>

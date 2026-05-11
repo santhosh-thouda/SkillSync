@@ -13,6 +13,7 @@ public class ReviewDto {
     private Long id;
     private Long mentorId;
     private Long userId;
+    private String userName;
     private Integer rating;
     private String comment;
     private LocalDateTime createdAt;

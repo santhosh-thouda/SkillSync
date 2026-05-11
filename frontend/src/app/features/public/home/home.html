@@ -1,0 +1,141 @@
+<div class="home-page">
+
+  <!-- ══════════════════════════════════════════════════════════
+       HERO SECTION — image background
+  ══════════════════════════════════════════════════════════ -->
+  <section class="collab-hero">
+    <!-- Dark gradient overlay for text legibility -->
+    <div class="hero-overlay"></div>
+
+    <div class="section-inner hero-inner">
+      <div class="hero-content-box" #animateEl>
+
+        <!-- Eyebrow pill -->
+        <div class="hero-eyebrow">
+          <span class="eyebrow-dot"></span>
+          <span>Community-Driven Learning</span>
+        </div>
+
+        <!-- Headline -->
+        <h1 class="hero-title">
+          Level Up Your Skills<br>
+          <span class="text-highlight">with Expert Mentorship</span>
+          <span class="hero-emoji"> 🚀</span>
+        </h1>
+
+        <!-- Subtext -->
+        <p class="hero-description">
+          Connect with experienced mentors, book personalized sessions, and track your learning journey — all in one powerful platform.
+        </p>
+
+        <!-- CTA Buttons -->
+        <div class="hero-ctas">
+          <a [routerLink]="store.isAuthenticated() ? '/dashboard' : '/auth/register'" class="hero-btn-primary">
+            Get Started Free
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </a>
+          <a [routerLink]="store.isAuthenticated() ? '/mentors' : '/auth/login'" class="hero-btn-ghost">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+              <path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            Explore Mentors
+          </a>
+        </div>
+
+        <!-- Social proof row -->
+        <div class="hero-social-proof">
+          <div class="proof-avatars">
+            <span class="proof-avatar" style="background:#2563eb">P</span>
+            <span class="proof-avatar" style="background:#7c3aed">A</span>
+            <span class="proof-avatar" style="background:#0f766e">K</span>
+            <span class="proof-avatar" style="background:#d97706">R</span>
+            <span class="proof-avatar proof-more">+</span>
+          </div>
+          <span class="proof-text">Join <strong>10,000+</strong> learners already growing</span>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════
+       STATS SECTION
+  ══════════════════════════════════════════════════════════ -->
+  <section class="stats-strip">
+    <div class="section-inner">
+      <div class="stats-row">
+        <div class="stat-item" *ngFor="let s of stats" #animateEl>
+          <span class="stat-num">{{ s.value }}</span>
+          <span class="stat-text">{{ s.label }}</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════
+       FEATURES
+  ══════════════════════════════════════════════════════════ -->
+  <section class="edu-features">
+    <div class="section-inner">
+      <div class="section-header" #animateEl>
+        <h2 class="section-title">Why SkillSync?</h2>
+        <p class="section-subtitle">A platform built by learners, for learners. Experience the power of collaborative growth.</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card" *ngFor="let f of features" #animateEl>
+          <div class="feature-icon-wrap">
+            <span class="feature-icon">{{ f.icon }}</span>
+          </div>
+          <h3 class="feature-title">{{ f.title }}</h3>
+          <p class="feature-desc">{{ f.desc }}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════
+       SUCCESS STORIES
+  ══════════════════════════════════════════════════════════ -->
+  <section class="success-stories">
+    <div class="section-inner">
+      <div class="section-header" #animateEl>
+        <h2 class="section-title">Success Stories</h2>
+      </div>
+
+      <div class="testimonials-grid">
+        <div class="testimonial-card" *ngFor="let t of testimonials" #animateEl>
+          <p class="testimonial-text">"{{ t.text }}"</p>
+          <div class="testimonial-author">
+            <div class="author-avatar">{{ t.avatar }}</div>
+            <div class="author-info">
+              <span class="author-name">{{ t.author }}</span>
+              <span class="author-role">{{ t.role }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════
+       FINAL CTA
+  ══════════════════════════════════════════════════════════ -->
+  <section class="final-enrollment">
+    <div class="section-inner">
+      <div class="premium-enrollment-card" #animateEl>
+        <div class="enroll-content">
+          <h2 class="enroll-title">Ready to start your journey?</h2>
+          <p class="enroll-subtitle">Join the professional mentorship community today and level up your career.</p>
+          <a [routerLink]="store.isAuthenticated() ? '/dashboard' : '/auth/register'" class="enroll-btn">
+            {{ store.isAuthenticated() ? 'Go to Dashboard' : 'Join for Free' }}
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>

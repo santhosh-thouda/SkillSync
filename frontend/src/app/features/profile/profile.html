@@ -1,0 +1,312 @@
+<!-- Loading -->
+<div *ngIf="isLoading" class="loading-center">
+  <mat-progress-spinner mode="indeterminate" diameter="44"></mat-progress-spinner>
+  <p>Loading your profile...</p>
+</div>
+
+<ng-container *ngIf="!isLoading">
+
+  <!-- ── Cover + Avatar Hero ─────────────────────────────────── -->
+  <section class="profile-hero animated-slide-up">
+    <!-- Cover banner -->
+    <div class="cover-banner">
+      <div class="cover-gradient"></div>
+    </div>
+
+    <!-- Avatar + identity row -->
+    <div class="identity-row">
+      <div class="avatar-wrapper">
+        <img [src]="currentAvatar" alt="Profile avatar" class="avatar-img">
+        <label class="avatar-edit-btn" matTooltip="Change photo">
+          <mat-icon>photo_camera</mat-icon>
+          <input type="text" hidden (click)="$event.stopPropagation()" />
+        </label>
+      </div>
+
+      <div class="identity-info">
+        <div class="name-row">
+          <h1>{{ userProfile?.name || store.user()?.name || 'SkillSync User' }}</h1>
+          <span class="role-pill"
+                [class.mentor-pill]="store.isMentor()"
+                [class.admin-pill]="store.isAdmin()">
+            <mat-icon>{{ store.isAdmin() ? 'admin_panel_settings' : store.isMentor() ? 'co_present' : 'school' }}</mat-icon>
+            {{ roleName }}
+          </span>
+        </div>
+        <p class="identity-sub">{{ userProfile?.email || store.user()?.email }}</p>
+        <p class="identity-desc">{{ profileSubtitle }}</p>
+      </div>
+
+      <!-- Mentor quick stats -->
+      <div class="mentor-stats-row" *ngIf="store.isMentor() && mentorProfile">
+        <div class="stat-pill">
+          <span class="stat-val">{{ mentorProfile.experience }}</span>
+          <span class="stat-lbl">Yrs Exp</span>
+        </div>
+        <div class="stat-pill">
+          <span class="stat-val">${{ mentorProfile.hourlyRate }}</span>
+          <span class="stat-lbl">Per Hour</span>
+        </div>
+        <div class="stat-pill">
+          <span class="stat-val">{{ mentorProfile.rating?.toFixed(1) || '—' }}</span>
+          <span class="stat-lbl">Rating</span>
+        </div>
+        <div class="stat-pill">
+          <span class="stat-val">${{ mentorProfile.earnings || 0 }}</span>
+          <span class="stat-lbl">Earnings</span>
+        </div>
+        <button class="avail-toggle-btn"
+                [class.available]="mentorProfile.available"
+                (click)="toggleAvailability()">
+          <mat-icon>{{ mentorProfile.available ? 'toggle_on' : 'toggle_off' }}</mat-icon>
+          {{ mentorProfile.available ? 'Available' : 'Unavailable' }}
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Two-column layout ───────────────────────────────────── -->
+  <div class="profile-grid animated-slide-up" style="animation-delay:0.1s">
+
+    <!-- LEFT: Personal Info -->
+    <div class="profile-col">
+
+      <!-- Personal Details Card -->
+      <div class="profile-card">
+        <div class="card-header">
+          <div>
+            <p class="eyebrow">Account</p>
+            <h2>Personal Details</h2>
+          </div>
+          <mat-icon class="card-icon">manage_accounts</mat-icon>
+        </div>
+
+        <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" class="profile-form">
+
+          <!-- Avatar URL with live preview -->
+          <div class="avatar-url-row">
+            <img [src]="currentAvatar" alt="preview" class="avatar-preview-sm">
+            <mat-form-field appearance="outline" class="dark-field flex-1">
+              <mat-label>Profile Photo URL</mat-label>
+              <input matInput formControlName="profileImage"
+                     placeholder="https://example.com/photo.jpg">
+              <mat-icon matSuffix>link</mat-icon>
+              <mat-hint>Paste any image URL — updates preview instantly</mat-hint>
+            </mat-form-field>
+          </div>
+
+          <!-- Full Name -->
+          <mat-form-field appearance="outline" class="dark-field full-width">
+            <mat-label>Full Name</mat-label>
+            <input matInput formControlName="name" placeholder="Your display name">
+            <mat-icon matSuffix>badge</mat-icon>
+            <mat-error *ngIf="profileForm.get('name')?.hasError('required')">Name is required</mat-error>
+          </mat-form-field>
+
+          <!-- Email (read-only) -->
+          <mat-form-field appearance="outline" class="dark-field full-width">
+            <mat-label>Email Address</mat-label>
+            <input matInput [value]="userProfile?.email || store.user()?.email" readonly>
+            <mat-icon matSuffix>lock</mat-icon>
+            <mat-hint>Email cannot be changed</mat-hint>
+          </mat-form-field>
+
+          <!-- Role (read-only) -->
+          <mat-form-field appearance="outline" class="dark-field full-width">
+            <mat-label>Account Role</mat-label>
+            <input matInput [value]="roleName" readonly>
+            <mat-icon matSuffix>verified_user</mat-icon>
+          </mat-form-field>
+
+          <div *ngIf="profileMessage" class="info-banner">
+            <mat-icon>info</mat-icon>
+            {{ profileMessage }}
+          </div>
+
+          <button type="submit"
+                  class="save-btn primary-btn"
+                  [disabled]="profileForm.invalid || isSaving">
+            <mat-progress-spinner *ngIf="isSaving" mode="indeterminate" diameter="18"></mat-progress-spinner>
+            <mat-icon *ngIf="!isSaving">save</mat-icon>
+            {{ isSaving ? 'Saving...' : 'Save Changes' }}
+          </button>
+        </form>
+      </div>
+
+    </div>
+
+    <!-- RIGHT: Mentor Details (mentor/learner apply) -->
+    <div class="profile-col">
+
+      <!-- Mentor Profile Card -->
+      <div class="profile-card" *ngIf="store.isMentor() || store.isLearner()">
+        <div class="card-header">
+          <div>
+            <p class="eyebrow">{{ store.isMentor() ? 'Mentor' : 'Professional' }}</p>
+            <h2>{{ store.isMentor() ? 'Teaching Profile' : 'Become a Mentor' }}</h2>
+          </div>
+          <div class="mentor-status-badges" *ngIf="store.isMentor()">
+            <span class="status-dot" [class.approved]="mentorProfile?.approved" [class.pending]="!mentorProfile?.approved">
+              <mat-icon>{{ mentorProfile?.approved ? 'verified' : 'pending' }}</mat-icon>
+              {{ mentorProfile?.approved ? 'Approved' : 'Pending' }}
+            </span>
+          </div>
+          <mat-icon *ngIf="store.isLearner()" class="card-icon" color="primary">co_present</mat-icon>
+        </div>
+
+        <!-- Learner Call to Action -->
+        <div *ngIf="store.isLearner() && !mentorProfile" class="info-banner learner-apply-banner">
+          <mat-icon>stars</mat-icon>
+          <div>
+            <strong>Ready to share your knowledge?</strong>
+            <p>Fill out your expertise details below to apply for a mentor role. Once approved, you can start hosting sessions.</p>
+          </div>
+        </div>
+
+        <!-- No mentor profile warning (for existing mentors) -->
+        <div *ngIf="store.isMentor() && !mentorProfile" class="warn-banner">
+          <mat-icon>warning</mat-icon>
+          <span>No mentor profile found. Fill details below to initialize.</span>
+        </div>
+
+        <form [formGroup]="mentorForm" (ngSubmit)="saveMentorProfile()" class="profile-form">
+
+          <!-- Bio -->
+          <mat-form-field appearance="outline" class="dark-field full-width">
+            <mat-label>Bio / About You</mat-label>
+            <textarea matInput formControlName="bio" rows="4"
+              placeholder="Describe your expertise, teaching style, and what learners can expect..."></textarea>
+            <mat-hint>Shown to learners on your public profile</mat-hint>
+          </mat-form-field>
+
+          <!-- Experience + Rate -->
+          <div class="two-col">
+            <mat-form-field appearance="outline" class="dark-field">
+              <mat-label>Experience (years)</mat-label>
+              <input matInput formControlName="experience" type="number" min="0">
+              <mat-icon matSuffix>work_history</mat-icon>
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="dark-field">
+              <mat-label>Hourly Rate ($)</mat-label>
+              <input matInput formControlName="hourlyRate" type="number" min="0">
+              <mat-icon matSuffix>attach_money</mat-icon>
+            </mat-form-field>
+          </div>
+
+          <!-- Skills -->
+          <mat-form-field appearance="outline" class="dark-field full-width">
+            <mat-label>Skills</mat-label>
+            <input matInput formControlName="skills"
+                   placeholder="Java, Spring Boot, Docker..."
+                   [matAutocomplete]="autoSkill">
+            <mat-icon matSuffix>sell</mat-icon>
+            <mat-hint>Comma-separated — type to get suggestions</mat-hint>
+            <mat-autocomplete #autoSkill="matAutocomplete"
+                              (optionSelected)="selectSkillSuggestion($event.option.value)">
+              <mat-option *ngFor="let s of filteredSkills | async" [value]="s">{{ s }}</mat-option>
+            </mat-autocomplete>
+          </mat-form-field>
+
+          <!-- Skill chips -->
+          <div class="skill-chips" *ngIf="skillsArray.length > 0">
+            <span class="skill-chip" *ngFor="let sk of skillsArray">
+              {{ sk }}
+              <button type="button" (click)="removeSkill(sk)" class="chip-remove">
+                <mat-icon>close</mat-icon>
+              </button>
+            </span>
+          </div>
+
+          <!-- Add Missing Skill -->
+          <div class="add-new-skill-box">
+            <p class="box-label">Don't see your skill?</p>
+            <div class="box-flex">
+              <mat-form-field appearance="outline" class="dark-field flex-1">
+                <mat-label>New Skill Name</mat-label>
+                <input matInput formControlName="newSkillName" placeholder="e.g. Kubernetes">
+              </mat-form-field>
+              <button type="button" mat-stroked-button color="primary" 
+                      [disabled]="!mentorForm.get('newSkillName')?.value"
+                      (click)="createNewSkill()">
+                <mat-icon>add</mat-icon> Add to Catalog
+              </button>
+            </div>
+          </div>
+
+          <!-- Availability toggle -->
+          <div class="avail-row">
+            <div>
+              <p class="avail-label">Availability</p>
+              <p class="avail-sub">{{ mentorForm.get('available')?.value ? 'Visible to learners for booking' : 'Hidden from learner search' }}</p>
+            </div>
+            <mat-slide-toggle formControlName="available" color="primary"></mat-slide-toggle>
+          </div>
+
+          <button type="submit"
+                  class="save-btn primary-btn"
+                  [disabled]="isSavingMentor">
+            <mat-progress-spinner *ngIf="isSavingMentor" mode="indeterminate" diameter="18"></mat-progress-spinner>
+            <mat-icon *ngIf="!isSavingMentor">{{ mentorProfile ? 'save' : 'add_circle' }}</mat-icon>
+            {{ isSavingMentor ? 'Saving...' : (mentorProfile ? 'Update Mentor Profile' : 'Create Mentor Profile') }}
+          </button>
+        </form>
+      </div>
+
+      <!-- Learner info card -->
+      <div class="profile-card" *ngIf="!store.isMentor() && !store.isAdmin()">
+        <div class="card-header">
+          <div>
+            <p class="eyebrow">Learning</p>
+            <h2>Your Journey</h2>
+          </div>
+          <mat-icon class="card-icon">school</mat-icon>
+        </div>
+        <div class="learner-info-grid">
+          <div class="info-tile">
+            <mat-icon>calendar_today</mat-icon>
+            <span class="tile-label">Member since</span>
+            <span class="tile-val">{{ (userProfile?.createdAt | date:'MMM yyyy') || 'Recently' }}</span>
+          </div>
+          <div class="info-tile">
+            <mat-icon>verified_user</mat-icon>
+            <span class="tile-label">Account type</span>
+            <span class="tile-val">Learner</span>
+          </div>
+          <div class="info-tile">
+            <mat-icon>email</mat-icon>
+            <span class="tile-label">Email</span>
+            <span class="tile-val">{{ userProfile?.email || store.user()?.email }}</span>
+          </div>
+        </div>
+        <p class="learner-hint">
+          Browse mentors, book sessions, and track your progress from the dashboard.
+        </p>
+      </div>
+
+      <!-- Admin info card -->
+      <div class="profile-card" *ngIf="store.isAdmin()">
+        <div class="card-header">
+          <div>
+            <p class="eyebrow">Admin</p>
+            <h2>Platform Access</h2>
+          </div>
+          <mat-icon class="card-icon" style="color:#818CF8">admin_panel_settings</mat-icon>
+        </div>
+        <div class="learner-info-grid">
+          <div class="info-tile">
+            <mat-icon style="color:#818CF8">shield</mat-icon>
+            <span class="tile-label">Access level</span>
+            <span class="tile-val">Full Admin</span>
+          </div>
+          <div class="info-tile">
+            <mat-icon style="color:#818CF8">manage_accounts</mat-icon>
+            <span class="tile-label">Permissions</span>
+            <span class="tile-val">All operations</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</ng-container>

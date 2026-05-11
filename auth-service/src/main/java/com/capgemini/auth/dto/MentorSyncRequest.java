@@ -7,6 +7,7 @@ import java.util.List;
 @Data
 public class MentorSyncRequest {
     private Long userId;
+    private String name;
     private String bio;
     private Integer experience;
     private Double hourlyRate;

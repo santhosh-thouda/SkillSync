@@ -12,6 +12,9 @@ public class SessionMapper {
                 session.getId(),
                 session.getMentorId(),
                 session.getLearnerId(),
+                session.getMentorName(),
+                session.getLearnerName(),
+                session.getHourlyRate(),
                 session.getSessionDate(),
                 session.getStatus(),
                 session.getCreatedAt()

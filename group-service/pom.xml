@@ -119,6 +119,12 @@
     <groupId>io.zipkin.reporter2</groupId>
     <artifactId>zipkin-reporter-brave</artifactId>
 </dependency>
+
+		<!-- WebSocket for group chat -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-websocket</artifactId>
+		</dependency>
 		
 	</dependencies>
 	<dependencyManagement>

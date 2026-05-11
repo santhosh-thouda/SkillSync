@@ -1,0 +1,31 @@
+<main class="min-h-screen flex items-center justify-center p-6 animated-fade-in">
+  <section class="glass-panel text-center max-w-lg animated-slide-up p-8">
+    <div class="text-8xl font-black mb-4 leading-none primary-text" style="font-family:'Outfit',sans-serif">
+      404
+    </div>
+
+    <p class="eyebrow mb-3">Routing Error</p>
+    <h1 class="text-3xl font-bold mb-3" style="font-family:'Outfit',sans-serif;color:var(--text-primary)">
+      Page not found
+    </h1>
+    <p class="text-sm mb-8 leading-relaxed" style="color:var(--text-secondary)">
+      The route may have changed, or this page is not available for your current role.
+      Use the workspace navigation to head back.
+    </p>
+
+    <div class="flex items-center justify-center gap-3 flex-wrap">
+      <a routerLink="/dashboard"
+         class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-white text-sm transition-all duration-200"
+         style="background:var(--primary-gradient);box-shadow:0 14px 30px rgba(37,99,235,0.24)">
+        <mat-icon style="font-size:18px;width:18px;height:18px">dashboard</mat-icon>
+        Back to Dashboard
+      </a>
+      <a routerLink="/mentors"
+         class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200"
+         style="border:1px solid var(--surface-border);color:var(--text-secondary);background:var(--surface-solid)">
+        <mat-icon style="font-size:18px;width:18px;height:18px">search</mat-icon>
+        Explore Mentors
+      </a>
+    </div>
+  </section>
+</main>

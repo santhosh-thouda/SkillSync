@@ -1,0 +1,143 @@
+<main class="auth-page animated-fade-in">
+  <section class="auth-card register-card animated-slide-up">
+
+    <!-- Left brand panel -->
+    <aside class="auth-story secondary">
+      <a routerLink="/auth/login" class="auth-brand" aria-label="SkillSync">
+        <span class="auth-logo"><mat-icon>school</mat-icon></span>
+        <span>SkillSync</span>
+      </a>
+      <div class="story-copy">
+        <p class="eyebrow">Join the network</p>
+        <h1>Create a richer path for learning and teaching.</h1>
+        <p>Set up your learner or mentor profile, then start matching with sessions, groups, skills, and feedback.</p>
+      </div>
+      <div class="story-metrics">
+        <div><strong>Skills</strong><span>Catalog</span></div>
+        <div><strong>Peers</strong><span>Groups</span></div>
+        <div><strong>Proof</strong><span>Reviews</span></div>
+      </div>
+    </aside>
+
+    <!-- Right form panel -->
+    <section class="auth-form-panel">
+
+      <!-- ── Step 1: Registration Form ── -->
+      <ng-container *ngIf="step === 'form'">
+        <div class="auth-heading">
+          <p class="eyebrow">Get started</p>
+          <h2>Create your account</h2>
+          <p>We'll send a verification code to your email.</p>
+        </div>
+
+        <div *ngIf="errorMessage" class="auth-alert">
+          <mat-icon>error_outline</mat-icon>
+          <span>{{ errorMessage }}</span>
+        </div>
+
+        <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="auth-form">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Full Name</mat-label>
+            <input matInput formControlName="name" placeholder="John Doe">
+            <mat-icon matSuffix>person</mat-icon>
+            <mat-error *ngIf="registerForm.get('name')?.hasError('required')">Name is required</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Email Address</mat-label>
+            <input matInput formControlName="email" type="email" placeholder="john@example.com">
+            <mat-icon matSuffix>email</mat-icon>
+            <mat-error *ngIf="registerForm.get('email')?.hasError('required')">Email is required</mat-error>
+            <mat-error *ngIf="registerForm.get('email')?.hasError('email')">Enter a valid email</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Password</mat-label>
+            <input matInput formControlName="password" [type]="hidePassword ? 'password' : 'text'">
+            <button mat-icon-button matSuffix (click)="hidePassword = !hidePassword" type="button">
+              <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+            <mat-error *ngIf="registerForm.get('password')?.hasError('required')">Password is required</mat-error>
+            <mat-error *ngIf="registerForm.get('password')?.hasError('minlength')">Minimum 6 characters</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>I want to be a...</mat-label>
+            <mat-select formControlName="role">
+              <mat-option value="ROLE_LEARNER">
+                <div class="option-row"><mat-icon>school</mat-icon> Learner — find mentors &amp; book sessions</div>
+              </mat-option>
+              <mat-option value="ROLE_MENTOR">
+                <div class="option-row"><mat-icon>co_present</mat-icon> Mentor — teach &amp; guide learners</div>
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <button type="submit" [disabled]="registerForm.invalid || isLoading" class="primary-submit secondary-submit">
+            <mat-spinner *ngIf="isLoading" diameter="18"></mat-spinner>
+            <span>{{ isLoading ? 'Sending code...' : 'Continue' }}</span>
+            <mat-icon *ngIf="!isLoading">arrow_forward</mat-icon>
+          </button>
+        </form>
+
+        <p class="auth-switch">Already have an account? <a routerLink="/auth/login">Sign in</a></p>
+      </ng-container>
+
+      <!-- ── Step 2: OTP Verification ── -->
+      <ng-container *ngIf="step === 'otp'">
+        <div class="auth-heading">
+          <p class="eyebrow">Verify your email</p>
+          <h2>Enter verification code</h2>
+          <p>We sent a 6-digit code to <strong>{{ email }}</strong>. Check your inbox (and spam folder).</p>
+        </div>
+
+        <div *ngIf="errorMessage" class="auth-alert">
+          <mat-icon>error_outline</mat-icon>
+          <span>{{ errorMessage }}</span>
+        </div>
+
+        <form [formGroup]="otpForm" (ngSubmit)="onVerifyOtp()" class="auth-form">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>6-digit code</mat-label>
+            <input matInput formControlName="otp" placeholder="000000"
+                   maxlength="6" inputmode="numeric" autocomplete="one-time-code"
+                   style="font-size:1.5rem;letter-spacing:0.3em;text-align:center">
+            <mat-icon matSuffix>pin</mat-icon>
+            <mat-error *ngIf="otpForm.get('otp')?.hasError('required')">Code is required</mat-error>
+            <mat-error *ngIf="otpForm.get('otp')?.hasError('pattern')">Must be 6 digits</mat-error>
+          </mat-form-field>
+
+          <button type="submit" [disabled]="otpForm.invalid || isLoading" class="primary-submit secondary-submit">
+            <mat-spinner *ngIf="isLoading" diameter="18"></mat-spinner>
+            <span>{{ isLoading ? 'Verifying...' : 'Verify &amp; Create Account' }}</span>
+            <mat-icon *ngIf="!isLoading">verified</mat-icon>
+          </button>
+        </form>
+
+        <div class="otp-footer">
+          <button class="resend-btn" (click)="resendOtp()" [disabled]="resendCooldown > 0 || isLoading">
+            <mat-icon>refresh</mat-icon>
+            {{ resendCooldown > 0 ? 'Resend in ' + resendCooldown + 's' : 'Resend code' }}
+          </button>
+          <button class="back-btn" (click)="goBack()">
+            <mat-icon>arrow_back</mat-icon>
+            Change email
+          </button>
+        </div>
+      </ng-container>
+
+      <!-- ── Step 3: Success ── -->
+      <ng-container *ngIf="step === 'done'">
+        <div class="success-state">
+          <div class="success-icon">
+            <mat-icon>check_circle</mat-icon>
+          </div>
+          <h2>Account created!</h2>
+          <p>Your email has been verified and your account is ready. Redirecting to sign in...</p>
+          <mat-spinner diameter="24" style="margin:1rem auto 0"></mat-spinner>
+        </div>
+      </ng-container>
+
+    </section>
+  </section>
+</main>

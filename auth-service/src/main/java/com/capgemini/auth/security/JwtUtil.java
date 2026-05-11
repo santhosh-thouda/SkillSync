@@ -32,7 +32,8 @@ public class JwtUtil {
     public String generateToken(String email, Long userId, String role) {
         return Jwts.builder()
                 .subject(email)
-                .claims(buildClaims(userId, role))
+                .claim("userId", userId)
+                .claim("role", role == null ? null : role.toUpperCase(Locale.ROOT))
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getKey())
@@ -75,15 +76,5 @@ public class JwtUtil {
 
     public boolean isTokenValid(String token, String email) {
         return email.equals(extractEmail(token));
-    }
-
-    private Map<String, Object> buildClaims(Long userId, String role) {
-        if (userId == null && role == null) {
-            return Map.of();
-        }
-        return Map.of(
-                "userId", userId,
-                "role", role == null ? null : role.toUpperCase(Locale.ROOT)
-        );
     }
 }

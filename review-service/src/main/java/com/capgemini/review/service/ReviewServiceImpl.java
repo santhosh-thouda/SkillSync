@@ -24,6 +24,7 @@ public class ReviewServiceImpl implements ReviewService {
         Review review = Review.builder()
                 .mentorId(request.getMentorId())
                 .userId(request.getUserId())
+                .userName(request.getUserName())
                 .rating(request.getRating())
                 .comment(request.getComment())
                 .build();

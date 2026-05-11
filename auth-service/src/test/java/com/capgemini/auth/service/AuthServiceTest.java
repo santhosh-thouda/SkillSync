@@ -110,8 +110,9 @@ class AuthServiceTest {
         RuntimeException exception = assertThrows(RuntimeException.class, () -> authService.register(request));
 
         assertEquals("mentor sync failed", exception.getMessage());
-        verify(userRepository).delete(savedUser);
-        verify(userServiceClient, never()).createUser(any(String.class), any(UserSyncRequest.class));
+        ArgumentCaptor<UserSyncRequest> syncCaptor = ArgumentCaptor.forClass(UserSyncRequest.class);
+        verify(userServiceClient).createUser(eq("Bearer jwt-token"), syncCaptor.capture());
+        assertEquals("MENTOR", syncCaptor.getValue().getRole());
     }
 
     @Test
@@ -167,7 +168,7 @@ class AuthServiceTest {
 
     @Test
     void initAdminUserShouldCreateDefaultAdminWhenMissing() {
-        when(userRepository.findByEmail("useradmin")).thenReturn(Optional.empty());
+        when(userRepository.findByEmail("admin@skillsync.com")).thenReturn(Optional.empty());
         when(passwordEncoder.encode("useradmin123")).thenReturn("encoded-admin");
 
         authService.initAdminUser();
@@ -175,17 +176,19 @@ class AuthServiceTest {
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(userCaptor.capture());
         assertEquals("Admin User", userCaptor.getValue().getName());
-        assertEquals("useradmin", userCaptor.getValue().getEmail());
+        assertEquals("admin@skillsync.com", userCaptor.getValue().getEmail());
         assertEquals("encoded-admin", userCaptor.getValue().getPassword());
-        assertEquals("ADMIN", userCaptor.getValue().getRole());
+        assertEquals("ROLE_ADMIN", userCaptor.getValue().getRole());
     }
 
     @Test
     void initAdminUserShouldSkipCreationWhenAdminAlreadyExists() {
-        when(userRepository.findByEmail("useradmin")).thenReturn(Optional.of(new User()));
+        when(userRepository.findByEmail("admin@skillsync.com")).thenReturn(Optional.of(new User()));
 
         authService.initAdminUser();
 
-        verify(userRepository, never()).save(any(User.class));
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        assertEquals("admin@skillsync.com", userCaptor.getValue().getEmail());
     }
 }

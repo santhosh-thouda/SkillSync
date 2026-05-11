@@ -1,0 +1,127 @@
+<header class="dashboard-hero animated-slide-up">
+  <div class="hero-content">
+    <p class="eyebrow">Expert Guidance</p>
+    <h1>Find Your <span class="primary-text">Perfect Mentor</span></h1>
+    <p class="subtitle">Connect with industry experts, filter by specialized skills, and accelerate your learning journey with live data insights.</p>
+  </div>
+  <div class="hero-decoration">
+    <mat-icon class="floating-icon">diversity_3</mat-icon>
+  </div>
+</header>
+
+<div class="mentors-layout animated-slide-up" style="animation-delay: 0.1s">
+  <!-- Filter Sidebar -->
+  <aside class="filter-sidebar">
+    <article class="glass-panel sticky-filter">
+      <div class="filter-header">
+        <div>
+          <p class="eyebrow">Controls</p>
+          <h2>Search Filters</h2>
+        </div>
+        <button mat-icon-button color="primary" (click)="clearFilters()" matTooltip="Reset Filters">
+          <mat-icon>restart_alt</mat-icon>
+        </button>
+      </div>
+
+      <form [formGroup]="filterForm" class="filter-form">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Search mentors</mat-label>
+          <input matInput formControlName="search" placeholder="Name, expertise...">
+          <mat-icon matSuffix>search</mat-icon>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Filter by skill</mat-label>
+          <input matInput formControlName="skill" placeholder="e.g. Java, Docker..." [matAutocomplete]="autoSkill">
+          <mat-icon matSuffix>sell</mat-icon>
+          <mat-autocomplete #autoSkill="matAutocomplete">
+            <mat-option *ngFor="let s of filteredSkillNames" [value]="s">{{ s }}</mat-option>
+          </mat-autocomplete>
+        </mat-form-field>
+
+        <div class="filter-section">
+          <div class="label-row">
+            <span>Minimum Rating</span>
+            <span class="value-chip">{{ filterForm.get('minRating')?.value }} ★</span>
+          </div>
+          <mat-slider min="0" max="5" step="0.5" class="full-width">
+            <input matSliderThumb formControlName="minRating">
+          </mat-slider>
+        </div>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Max Hourly Rate ($)</mat-label>
+          <input matInput formControlName="maxPrice" type="number" min="0" placeholder="No limit">
+          <mat-icon matPrefix>attach_money</mat-icon>
+        </mat-form-field>
+
+        <div class="toggle-section">
+          <mat-slide-toggle formControlName="available" color="primary">
+            Available Now
+          </mat-slide-toggle>
+        </div>
+      </form>
+    </article>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="mentors-main">
+    <div *ngIf="isLoading" class="loading-state">
+      <mat-spinner diameter="48"></mat-spinner>
+      <p>Synchronizing with mentor database...</p>
+    </div>
+
+    <div *ngIf="!isLoading && mentors.length === 0" class="empty-state glass-panel">
+      <mat-icon>person_search</mat-icon>
+      <h3>No mentors match your criteria</h3>
+      <p>Try broadening your search or clearing the active filters.</p>
+      <button mat-flat-button color="primary" (click)="clearFilters()">
+        <mat-icon>refresh</mat-icon>
+        Clear All Filters
+      </button>
+    </div>
+
+    <div class="mentor-grid" *ngIf="!isLoading">
+      <mat-card class="mentor-card glass-panel animated-slide-up" *ngFor="let mentor of mentors; let i = index" [style.animation-delay]="(0.15 + (i * 0.05)) + 's'">
+        <div class="mentor-card-header">
+          <div class="avatar-wrap">
+            <img [src]="'https://api.dicebear.com/7.x/initials/svg?seed=' + (mentor.name || 'Mentor')" alt="Avatar" class="mentor-avatar">
+            <div class="status-indicator" [class.online]="mentor.available !== false"></div>
+          </div>
+          <div class="header-info">
+            <div class="name-row">
+              <h3>{{ mentor.name || ('Mentor #' + mentor.id) }}</h3>
+              <span class="rating-badge">
+                <mat-icon>star</mat-icon>
+                {{ mentor.rating?.toFixed(1) || 'New' }}
+              </span>
+            </div>
+            <p class="experience">{{ mentor.experience }} years of experience</p>
+          </div>
+        </div>
+
+        <mat-card-content>
+          <p class="bio">{{ mentor.bio | slice:0:120 }}{{ mentor.bio.length > 120 ? '...' : '' }}</p>
+          
+          <div class="skill-cloud">
+            <span class="skill-tag" *ngFor="let skill of mentor.skills | slice:0:4">{{ skillLabel(skill) }}</span>
+            <span class="skill-tag count" *ngIf="mentor.skills.length > 4">+{{ mentor.skills.length - 4 }}</span>
+          </div>
+
+          <div class="mentor-footer">
+            <div class="price-box">
+              <span class="price">${{ mentor.hourlyRate }}</span>
+              <span class="unit">/ hr</span>
+            </div>
+            <div class="actions" *ngIf="!store.isAdmin()">
+              <button mat-flat-button color="primary" class="book-btn" (click)="bookSession(mentor)" [disabled]="mentor.available === false || mentor.approved === false">
+                <mat-icon>calendar_today</mat-icon>
+                Book
+              </button>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </main>
+</div>

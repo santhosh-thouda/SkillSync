@@ -1,0 +1,191 @@
+<header class="dashboard-hero animated-slide-up">
+  <div class="hero-content">
+    <p class="eyebrow">Session Management</p>
+    <h1>{{ store.isMentor() ? 'Mentor' : 'Learner' }} <span class="primary-text">Dashboard</span></h1>
+    <p class="subtitle">
+      {{ store.isMentor() ? 'Review requests, coordinate with learners, and track your teaching impact.' : 'Monitor your learning schedule, join live sessions, and track your progress.' }}
+    </p>
+  </div>
+  <div class="hero-actions">
+    <button mat-flat-button class="refresh-btn" (click)="loadSessions()" [disabled]="isLoading">
+      <mat-icon [class.rotating]="isLoading">refresh</mat-icon>
+      Sync Schedule
+    </button>
+  </div>
+</header>
+
+<div class="session-kpi-grid animated-slide-up" *ngIf="!isLoading && !loadMessage" style="animation-delay: 0.05s">
+  <div class="kpi-card glass-panel pending">
+    <div class="icon-box"><mat-icon>pending_actions</mat-icon></div>
+    <div class="info">
+      <h3>{{ requested.length }}</h3>
+      <p>Pending Requests</p>
+    </div>
+  </div>
+  <div class="kpi-card glass-panel upcoming">
+    <div class="icon-box"><mat-icon>calendar_today</mat-icon></div>
+    <div class="info">
+      <h3>{{ accepted.length }}</h3>
+      <p>Upcoming Sessions</p>
+    </div>
+  </div>
+  <div class="kpi-card glass-panel completed">
+    <div class="icon-box"><mat-icon>workspace_premium</mat-icon></div>
+    <div class="info">
+      <h3>{{ completed.length }}</h3>
+      <p>Completed</p>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="isLoading" class="loading-state-main animated-fade-in">
+  <mat-spinner diameter="48"></mat-spinner>
+  <p>Synchronizing your schedule...</p>
+</div>
+
+<div *ngIf="!isLoading && loadMessage" class="info-banner glass-panel animated-slide-up">
+  <mat-icon>info</mat-icon>
+  <p>{{ loadMessage }}</p>
+</div>
+
+<mat-tab-group *ngIf="!isLoading" class="premium-tabs animated-slide-up" style="animation-delay: 0.1s" dynamicHeight>
+  <!-- Pending Tab -->
+  <mat-tab>
+    <ng-template mat-tab-label>
+      <mat-icon>hourglass_top</mat-icon>
+      <span>Pending</span>
+      <span class="badge" *ngIf="requested.length">{{ requested.length }}</span>
+    </ng-template>
+    
+    <div class="tab-content">
+      <div class="session-grid" *ngIf="requested.length > 0; else emptyPending">
+        <article class="session-card glass-panel animated-slide-up" *ngFor="let s of requested; let i = index" [style.animation-delay]="(0.15 + (i * 0.05)) + 's'">
+          <div class="card-top">
+            <div class="topic-info">
+              <h3>{{ s.topic || 'Mentoring Session' }}</h3>
+              <p class="user-ref">
+                <mat-icon>person</mat-icon>
+                {{ store.isMentor() ? (s.learnerName || ('Learner #' + s.learnerId)) : (s.mentorName || ('Mentor #' + s.mentorId)) }}
+              </p>
+            </div>
+            <span class="status-pill requested">Requested</span>
+          </div>
+          
+          <div class="card-body">
+            <div class="meta-item">
+              <mat-icon>event</mat-icon>
+              <span>{{ s.sessionDate | date:'EEEE, MMMM d, y' }}</span>
+            </div>
+            <div class="meta-item">
+              <mat-icon>schedule</mat-icon>
+              <span>{{ s.sessionDate | date:'shortTime' }}</span>
+            </div>
+          </div>
+
+          <div class="card-actions">
+            <ng-container *ngIf="store.isMentor()">
+              <button mat-flat-button color="primary" (click)="accept(s)" [disabled]="isProcessing(s.id)">
+                <mat-icon>check_circle</mat-icon> Accept
+              </button>
+              <button mat-stroked-button color="warn" (click)="reject(s)" [disabled]="isProcessing(s.id)">
+                <mat-icon>block</mat-icon> Reject
+              </button>
+            </ng-container>
+            <button *ngIf="!store.isMentor()" mat-stroked-button color="warn" (click)="cancel(s)" [disabled]="isProcessing(s.id)" class="full-width">
+              <mat-icon>close</mat-icon> Cancel Request
+            </button>
+          </div>
+        </article>
+      </div>
+      <ng-template #emptyPending>
+        <div class="empty-state-card glass-panel">
+          <mat-icon>done_all</mat-icon>
+          <h3>All clear!</h3>
+          <p>You have no pending session requests at the moment.</p>
+        </div>
+      </ng-template>
+    </div>
+  </mat-tab>
+
+  <!-- Upcoming Tab -->
+  <mat-tab>
+    <ng-template mat-tab-label>
+      <mat-icon>event_available</mat-icon>
+      <span>Upcoming</span>
+      <span class="badge accent" *ngIf="accepted.length">{{ accepted.length }}</span>
+    </ng-template>
+    
+    <div class="tab-content">
+      <div class="session-grid" *ngIf="accepted.length > 0; else emptyUpcoming">
+        <article class="session-card glass-panel animated-slide-up" *ngFor="let s of accepted; let i = index" [style.animation-delay]="(0.15 + (i * 0.05)) + 's'">
+          <div class="card-top">
+            <div class="topic-info">
+              <h3>{{ s.topic || 'Mentoring Session' }}</h3>
+              <p class="user-ref">
+                <mat-icon>person</mat-icon>
+                {{ store.isMentor() ? (s.learnerName || ('Learner #' + s.learnerId)) : (s.mentorName || ('Mentor #' + s.mentorId)) }}
+              </p>
+            </div>
+            <span class="status-pill accepted">Accepted</span>
+          </div>
+
+          <div class="card-body">
+            <div class="meta-item">
+              <mat-icon>event</mat-icon>
+              <span>{{ s.sessionDate | date:'EEEE, MMMM d, y' }}</span>
+            </div>
+            <div class="meta-item">
+              <mat-icon>schedule</mat-icon>
+              <span>{{ s.sessionDate | date:'shortTime' }}</span>
+            </div>
+          </div>
+
+          <div class="card-actions">
+            <button *ngIf="store.isMentor()" mat-flat-button color="primary" (click)="complete(s)" [disabled]="isProcessing(s.id)" class="full-width">
+              <mat-icon>workspace_premium</mat-icon> Mark as Completed
+            </button>
+            <button *ngIf="!store.isMentor()" mat-stroked-button color="warn" (click)="cancel(s)" [disabled]="isProcessing(s.id)" class="full-width">
+              <mat-icon>event_busy</mat-icon> Cancel Session
+            </button>
+          </div>
+        </article>
+      </div>
+      <ng-template #emptyUpcoming>
+        <div class="empty-state-card glass-panel">
+          <mat-icon>calendar_today</mat-icon>
+          <h3>Nothing scheduled</h3>
+          <p>You don't have any upcoming sessions. Time to book some!</p>
+        </div>
+      </ng-template>
+    </div>
+  </mat-tab>
+
+  <!-- History Tab -->
+  <mat-tab>
+    <ng-template mat-tab-label>
+      <mat-icon>history</mat-icon>
+      <span>Archive</span>
+    </ng-template>
+    
+    <div class="tab-content">
+      <div class="session-grid" *ngIf="completed.length > 0 || rejected.length > 0; else emptyArchive">
+        <article class="session-card glass-panel mini animated-slide-up" *ngFor="let s of completed.concat(rejected); let i = index" [style.animation-delay]="(0.15 + (i * 0.05)) + 's'">
+          <div class="card-top">
+            <div class="topic-info">
+              <h3>{{ s.topic || 'Mentoring Session' }}</h3>
+              <p class="date-ref">{{ s.sessionDate | date:'mediumDate' }}</p>
+            </div>
+            <span class="status-pill" [ngClass]="s.status.toLowerCase()">{{ s.status }}</span>
+          </div>
+        </article>
+      </div>
+      <ng-template #emptyArchive>
+        <div class="empty-state-card glass-panel">
+          <mat-icon>inventory_2</mat-icon>
+          <h3>Archive empty</h3>
+          <p>No past sessions found in your history.</p>
+        </div>
+      </ng-template>
+    </div>
+  </mat-tab>
+</mat-tab-group>

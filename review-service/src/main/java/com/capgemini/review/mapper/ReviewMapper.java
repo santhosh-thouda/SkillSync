@@ -12,6 +12,7 @@ public class ReviewMapper {
                 review.getId(),
                 review.getMentorId(),
                 review.getUserId(),
+                review.getUserName(),
                 review.getRating(),
                 review.getComment(),
                 review.getCreatedAt()

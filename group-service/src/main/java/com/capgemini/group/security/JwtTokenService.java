@@ -27,6 +27,7 @@ public class JwtTokenService {
         return new JwtPrincipal(
                 parsedUserId,
                 claims.getSubject(),
+                claims.get("name", String.class),
                 claims.get("role", String.class)
         );
     }

@@ -25,6 +25,8 @@ public class Mentor {
     @Column(name = "user_id", nullable = false, unique = true)
     private Long userId;
 
+    private String name;
+
     @Column(columnDefinition = "TEXT")
     private String bio;
 
@@ -37,6 +39,9 @@ public class Mentor {
     private Double hourlyRate;
 
     private boolean available;
+    
+    @Builder.Default
+    private Double earnings = 0.0;
 
     @ElementCollection
     @CollectionTable(name = "mentor_skills", joinColumns = @JoinColumn(name = "mentor_id"))

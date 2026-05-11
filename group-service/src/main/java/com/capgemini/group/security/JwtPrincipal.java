@@ -1,4 +1,4 @@
 package com.capgemini.group.security;
 
-public record JwtPrincipal(Long userId, String email, String role) {
+public record JwtPrincipal(Long userId, String email, String name, String role) {
 }

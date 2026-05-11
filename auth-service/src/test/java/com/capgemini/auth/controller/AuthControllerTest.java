@@ -31,11 +31,11 @@ class AuthControllerTest {
         RegisterRequest request = new RegisterRequest();
         request.setEmail("alex@example.com");
 
-        ResponseEntity<String> response = authController.register(request);
+        ResponseEntity<java.util.Map<String, String>> response = authController.register(request);
 
         verify(authService).register(request);
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
-        assertEquals("User registered successfully", response.getBody());
+        assertEquals(java.util.Map.of("message", "User registered successfully"), response.getBody());
     }
 
     @Test

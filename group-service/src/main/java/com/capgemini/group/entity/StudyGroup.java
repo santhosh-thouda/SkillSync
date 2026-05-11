@@ -42,3 +42,4 @@ public class StudyGroup {
     @Builder.Default
     private Set<Long> members = new HashSet<>();
 }
+ 
