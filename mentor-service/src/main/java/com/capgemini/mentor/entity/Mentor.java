@@ -43,6 +43,7 @@ public class Mentor {
     @Builder.Default
     private Double earnings = 0.0;
 
+    // collection of basic types, here it is Long with the help of @ElementCollection
     @ElementCollection
     @CollectionTable(name = "mentor_skills", joinColumns = @JoinColumn(name = "mentor_id"))
     @Column(name = "skill_id")
@@ -55,6 +56,8 @@ public class Mentor {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
     
+    
+    // this method automatically runs before we do insertion for the first time, not the existing data or old data
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

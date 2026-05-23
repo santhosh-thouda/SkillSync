@@ -22,11 +22,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenService jwtTokenService;
 
+    // Filters the every incoming request and validates the Jwt token
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         String authHeader = request.getHeader("Authorization");
 
+        // If the authorization token is null or doesn't startswith Bearer, then the
+        // token is not valid
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
@@ -38,11 +41,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             role = role.substring(5);
         }
 
+        // Creates an authentication token with the user's principal and roles
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                 principal,
                 null,
-                List.of(new SimpleGrantedAuthority("ROLE_" + role))
-        );
+                List.of(new SimpleGrantedAuthority("ROLE_" + role)));
         authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
         SecurityContextHolder.getContext().setAuthentication(authentication);
 

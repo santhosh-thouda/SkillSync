@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+// Global exception handler for handling exceptions
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -19,6 +20,7 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(buildErrorBody(HttpStatus.NOT_FOUND, ex.getMessage(), request.getRequestURI()), HttpStatus.NOT_FOUND);
     }
 
+    // Exception handler for method argument not valid exception
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidationExceptions(MethodArgumentNotValidException ex, HttpServletRequest request) {
         Map<String, String> errors = new LinkedHashMap<>();

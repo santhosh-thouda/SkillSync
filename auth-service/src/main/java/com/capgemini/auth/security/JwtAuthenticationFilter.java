@@ -15,6 +15,11 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
+/**
+ * A critical security filter that intercepts incoming HTTP requests to validate JWTs.
+ * It operates strictly "once per request" and bridges the stateless token validation
+ * with Spring Security's stateful {@link SecurityContextHolder}.
+ */
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -22,6 +27,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
     private final CustomUserDetailsService userDetailsService;
 
+    /**
+     * Extracts the Authorization header, validates the Bearer token, parses the claims,
+     * and injects the authenticated identity into the Spring Security Context.
+     *
+     * @param request The incoming HTTP request.
+     * @param response The outgoing HTTP response.
+     * @param filterChain The security filter chain to continue request processing.
+     * @throws ServletException If a servlet-specific error occurs.
+     * @throws IOException If an I/O error occurs during filtering.
+     */
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
@@ -51,6 +66,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
+    /**
+     * Determines whether this filter should be bypassed for specific routes.
+     * Bypasses filtering for all `/auth/**` endpoints to allow unauthenticated logins/registrations.
+     *
+     * @param request The HTTP request to evaluate.
+     * @return true if the filter should not execute; false otherwise.
+     */
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         return request.getServletPath().startsWith("/auth/");

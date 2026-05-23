@@ -54,7 +54,7 @@
           <input matInput [matDatepicker]="picker" formControlName="sessionDate" [min]="minDate" readonly>
           <mat-datepicker-toggle matIconPrefix [for]="picker"></mat-datepicker-toggle>
           <mat-datepicker #picker></mat-datepicker>
-          <mat-icon matSuffix>calendar_month</mat-icon>
+          <!-- <mat-icon matSuffix>calendar_month</mat-icon> -->
         </mat-form-field>
 
         <!-- Notes -->
@@ -104,7 +104,7 @@
           <span class="status-badge-mini" [ngClass]="getStatusClass(s.status)">{{ s.status }}</span>
         </article>
       </div>
-      
+
       <button mat-stroked-button color="primary" class="view-all-btn" routerLink="/sessions/manage">
         Manage All Sessions
         <mat-icon>arrow_forward</mat-icon>

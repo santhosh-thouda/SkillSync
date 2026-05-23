@@ -50,9 +50,11 @@ public class AccessControlService {
 
     private String normalizeRole(String role) {
         String normalizedRole = role == null ? "" : role.trim().toUpperCase(Locale.ROOT);
+        // remove the prefix ROLE_ if it exists
         if (normalizedRole.startsWith("ROLE_")) {
             normalizedRole = normalizedRole.substring(5);
         }
+        // user internally mapped to Learner
         return "USER".equals(normalizedRole) ? "LEARNER" : normalizedRole;
     }
 }

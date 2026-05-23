@@ -35,10 +35,14 @@ public class SecurityConfig {
                     "/ws/chat",
                     "/ws/chat/**",
                     "/ws/chat-sockjs",
-                    "/ws/chat-sockjs/**"
+                    "/ws/chat-sockjs/**",
+                    "/actuator/**"
                 ).permitAll()
                 .anyRequest().authenticated()
             )
+         // Inject our custom JWT filter BEFORE the standard Spring Security login filter.
+         // This ensures the token is parsed and the user is authenticated before any 
+         // other security checks occur.
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

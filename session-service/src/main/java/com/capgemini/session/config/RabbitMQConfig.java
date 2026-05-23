@@ -42,7 +42,7 @@ public class RabbitMQConfig {
 
     @Bean
     public Queue sessionQueue() {
-        return new Queue(queueName, true); // durable=true
+        return new Queue(queueName, true); // durable=true, it means the messages will be there in Queue even if we restart the rabbitmq server
     }
 
     @Bean
@@ -60,11 +60,14 @@ public class RabbitMQConfig {
 
     // ── Connection / Template ─────────────────────────────────
 
+    // we cannot store the java objects directly if we do like that only other java app can understand, 
+    // so that we convert to json now any other python, node, go can understand the message.
     @Bean
     public Jackson2JsonMessageConverter messageConverter() {
         return new Jackson2JsonMessageConverter();
     }
 
+    // this method keeps the connection alive between rabbitmq and springboot
     @Bean
     public ConnectionFactory connectionFactory() {
         CachingConnectionFactory factory = new CachingConnectionFactory(host, port);

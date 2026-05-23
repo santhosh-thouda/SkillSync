@@ -13,6 +13,11 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Implementation of the {@link UserService}.
+ * Manages the core business logic for user profile CRUD operations, mapping entities
+ * to DTOs to ensure sensitive database fields remain encapsulated.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -21,6 +26,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
 
+ 
     @Override
     public UserDto getUserById(Long id) {
         log.info("Fetching user by id: {}", id);
@@ -57,6 +63,7 @@ public class UserServiceImpl implements UserService {
                 .collect(Collectors.toList());
     }
 
+  
     @Override
     public UserDto updateUser(Long id, UserUpdateRequest updateRequest) {
         User user = userRepository.findById(id)

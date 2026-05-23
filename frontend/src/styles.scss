@@ -25,18 +25,18 @@
   --sidebar-bg: #ffffff;
   --topbar-bg: rgba(255, 255, 255, 0.9);
   --field-bg: #f8fafc;
-  
+
   --text-primary: #0f172a;
   --text-secondary: #475569;
   --text-muted: #64748b;
-  
+
   --success: #10b981;
   --warning: #f59e0b;
   --danger: #ef4444;
-  
+
   --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   --card-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.1);
-  
+
   --gradient-hero: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
   --gradient-surface: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
   --glow-primary: 0 4px 20px rgba(30, 64, 175, 0.1);
@@ -96,18 +96,18 @@
   --sidebar-bg: #0f172a;
   --topbar-bg: rgba(15, 23, 42, 0.95);
   --field-bg: #1e2535;
-  
+
   --text-primary: #f1f5f9;
   --text-secondary: #cbd5e1;
   --text-muted: #94a3b8;
-  
+
   --success: #34d399;
   --warning: #fbbf24;
   --danger: #f87171;
-  
+
   --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
   --card-shadow-hover: 0 8px 30px rgba(0, 0, 0, 0.5);
-  
+
   --gradient-hero: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
   --gradient-surface: linear-gradient(180deg, #161d2f 0%, #0b0f1a 100%);
   --glow-primary: 0 4px 20px rgba(96, 165, 250, 0.2);
@@ -577,16 +577,16 @@ h6 {
   box-shadow: none !important;
   color: #ffffff !important;
   transition: background 0.15s ease, box-shadow 0.15s ease !important;
-  
+
   .mat-mdc-button-touch-target {
     display: none;
   }
-  
+
   .mdc-button__label {
     color: #ffffff !important;
     z-index: 1;
   }
-  
+
   mat-icon {
     color: #ffffff !important;
   }
@@ -906,7 +906,7 @@ h6 {
     width: 1.2rem;
     height: 1.2rem;
   }
-  
+
   span {
     color: #ffffff !important;
   }

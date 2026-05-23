@@ -15,7 +15,7 @@ import { AuthStore } from '../../../core/store/auth.store';
   standalone: true,
   imports: [
     CommonModule, ReactiveFormsModule, RouterLink,
-    MatCardModule, MatFormFieldModule, MatInputModule, 
+    MatCardModule, MatFormFieldModule, MatInputModule,
     MatButtonModule, MatIconModule, MatProgressSpinnerModule
   ],
   templateUrl: './login.html',
@@ -35,12 +35,12 @@ export class Login {
 
   async onSubmit() {
     console.log('Login form submitted', this.loginForm.valid, this.loginForm.value);
-    
+
     if (this.loginForm.valid) {
       await this.store.login(this.loginForm.value);
-      
+
       console.log('Login complete, isAuthenticated:', this.store.isAuthenticated());
-      
+
       if (this.store.isAuthenticated()) {
         this.router.navigate(['/dashboard']);
       }
@@ -50,3 +50,4 @@ export class Login {
     }
   }
 }
+ 

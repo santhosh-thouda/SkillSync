@@ -34,14 +34,17 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
     private final JwtTokenService jwtTokenService;
 
+    // This method intercepts every STOMP message before it is sent.
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
+    	
+    	// Extract STOMP header accessor from message
         StompHeaderAccessor accessor =
                 MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
 
         if (accessor == null) return message;
 
-        // Only authenticate on CONNECT frames
+        // Only authenticate on CONNECT frames, CONNECT frame happens when client first connects to WebSocket server.
         if (StompCommand.CONNECT.equals(accessor.getCommand())) {
             String authHeader = accessor.getFirstNativeHeader("Authorization");
 
@@ -80,3 +83,4 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
         return message;
     }
 }
+

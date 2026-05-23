@@ -12,6 +12,10 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 
+/**
+ * Cryptographic utility class responsible for signing, generating, and parsing JSON Web Tokens.
+ * Utilizes the io.jsonwebtoken (JJWT) library with HMAC-SHA encryption.
+ */
 @Component
 public class JwtUtil {
 
@@ -21,6 +25,12 @@ public class JwtUtil {
     @Value("${jwt.expiration}")
     private long expiration;
 
+    /**
+     * Constructs the SecretKey object from the application properties secret string.
+     * Required for both generating and verifying the signature of a token.
+     *
+     * @return SecretKey instance for HMAC-SHA.
+     */
     private SecretKey getKey() {
         return Keys.hmacShaKeyFor(secret.getBytes());
     }
@@ -29,6 +39,14 @@ public class JwtUtil {
         return generateToken(email, null, null);
     }
 
+    /**
+     * Overloaded method to generate a JWT containing standard identity claims.
+     *
+     * @param email The user's email address (Subject).
+     * @param userId The user's internal UUID or Long ID.
+     * @param role The user's role (e.g., ADMIN, MENTOR) normalized to uppercase.
+     * @return The serialized, signed JWT string.
+     */
     public String generateToken(String email, Long userId, String role) {
         return Jwts.builder()
                 .subject(email)
@@ -40,6 +58,14 @@ public class JwtUtil {
                 .compact();
     }
 
+    /**
+     * Parses the JWT to extract the subject (email address).
+     * Validates the token's signature cryptographically before parsing.
+     *
+     * @param token The raw JWT string.
+     * @return The extracted email address.
+     * @throws io.jsonwebtoken.JwtException If the token is invalid, expired, or malformed.
+     */
     public String extractEmail(String token) {
         Claims claims = Jwts.parser()
                 .verifyWith(getKey())
@@ -74,6 +100,14 @@ public class JwtUtil {
                 .getPayload();
     }
 
+    /**
+     * High-level validation method checking if the token matches the provided email.
+     * Note: Token expiration is validated automatically inside the parser logic.
+     *
+     * @param token The raw JWT string.
+     * @param email The expected email string.
+     * @return true if the email matches the token subject.
+     */
     public boolean isTokenValid(String token, String email) {
         return email.equals(extractEmail(token));
     }

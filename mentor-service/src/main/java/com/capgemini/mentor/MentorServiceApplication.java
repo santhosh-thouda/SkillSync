@@ -9,5 +9,4 @@ public class MentorServiceApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(MentorServiceApplication.class, args);
 	}
-
 }

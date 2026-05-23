@@ -14,6 +14,11 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * REST Controller for the Mentor domain.
+ * Manages mentor profile applications, approvals, availability, and earnings.
+ * Exposes methods to both regular users (for catalog viewing) and ADMINs/mentors (for profile management).
+ */
 @RestController
 @RequestMapping("/mentors")
 @RequiredArgsConstructor
@@ -21,6 +26,12 @@ public class MentorController {
 
     private final MentorService mentorService;
 
+    /**
+     * Allows an authenticated user to submit an application to become a mentor.
+     *
+     * @param request Contains the user's bio, skills, and hourly rate.
+     * @return The newly created pending mentor profile.
+     */
     @PostMapping("/apply")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<MentorDto> applyForMentor(@Valid @RequestBody MentorApplyRequest request) {
@@ -61,12 +72,27 @@ public class MentorController {
         return ResponseEntity.ok(mentorService.updateMentor(id, request));
     }
 
+    /**
+     * Approves a pending mentor application.
+     * Typically executed by an ADMIN user via a back-office dashboard.
+     *
+     * @param id The mentor profile ID to approve.
+     * @return The newly approved MentorDto.
+     */
     @PutMapping("/{id}/approve")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MentorDto> approveMentor(@PathVariable Long id) {
         return ResponseEntity.ok(mentorService.approveMentor(id));
     }
 
+    /**
+     * Increments the total earnings of a mentor.
+     * Called synchronously by the Session Service when a session is completed.
+     *
+     * @param id The mentor profile ID.
+     * @param amount The monetary amount to add.
+     * @return The updated MentorDto.
+     */
     @PutMapping("/{id}/earnings")
     public ResponseEntity<MentorDto> addEarnings(@PathVariable Long id, @RequestParam Double amount) {
         return ResponseEntity.ok(mentorService.addEarnings(id, amount));

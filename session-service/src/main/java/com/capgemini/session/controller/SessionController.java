@@ -12,6 +12,11 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * REST Controller for the Mentorship Session domain.
+ * Governs the state machine of a mentorship booking (PENDING -> ACCEPTED -> COMPLETED).
+ * Provides secure endpoints to book, manage, and retrieve historical sessions.
+ */
 @RestController
 @RequestMapping("/sessions")
 @RequiredArgsConstructor
@@ -19,6 +24,10 @@ public class SessionController {
 
     private final SessionService sessionService;
 
+    /**
+     Starts the state machine with a status of PENDING.
+    **/
+    
     @PostMapping
     @PreAuthorize("hasRole('ADMIN') or (hasRole('LEARNER') and @accessControlService.canRequestSession(#request, authentication))")
     public ResponseEntity<SessionDto> requestSession(@Valid @RequestBody SessionRequest request) {
@@ -42,7 +51,7 @@ public class SessionController {
     public ResponseEntity<SessionDto> cancelSession(@PathVariable Long id) {
         return ResponseEntity.ok(sessionService.updateSessionStatus(id, "CANCELLED"));
     }
-    
+   
     @PutMapping("/{id}/complete")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<SessionDto> completeSession(@PathVariable Long id) {

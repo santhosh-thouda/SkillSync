@@ -21,12 +21,6 @@ public class RabbitMQConfig {
     @Value("${rabbitmq.routingkey}")
     private String routingKey;
 
-    /**
-     * Declare the queue as durable so it survives RabbitMQ restarts.
-     * Using durable=true, exclusive=false, autoDelete=false matches
-     * the declaration in session-service — both services agree on the
-     * same queue properties, so whichever starts first creates it.
-     */
     @Bean
     public Queue sessionQueue() {
         return new Queue(queueName, true);

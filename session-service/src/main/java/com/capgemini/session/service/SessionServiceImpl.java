@@ -15,6 +15,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Implementation of the {@link SessionService}.
+ * Handles the business logic for creating and transitioning the state of mentorship sessions.
+ * Interacts synchronously with MentorService via Feign to update earnings,
+ * and asynchronously with NotificationService via RabbitMQ to dispatch emails.
+ */
 @Service
 @RequiredArgsConstructor
 public class SessionServiceImpl implements SessionService {
@@ -25,6 +31,13 @@ public class SessionServiceImpl implements SessionService {
     private final MentorServiceClient mentorServiceClient;
     private final HttpServletRequest request;
 
+    /**
+     * Initializes a new mentorship session in the PENDING state.
+     * Publishes a SessionCreated event to RabbitMQ for notifications.
+     *
+     * @param request The session request details.
+     * @return The saved SessionDto.
+     */
     @Override
     public SessionDto requestSession(SessionRequest request) {
         MentorshipSession session = MentorshipSession.builder()
@@ -42,6 +55,17 @@ public class SessionServiceImpl implements SessionService {
         return sessionMapper.toDto(savedSession);
     }
 
+    /**
+     * Updates the status of an existing session (e.g., ACCEPTED, REJECTED, COMPLETED).
+     * If the status is 'COMPLETED', it makes a synchronous Feign call to the mentor-service
+     * to increment the mentor's total earnings.
+     * Finally, publishes a status change event to RabbitMQ.
+     *
+     * @param id The session ID.
+     * @param status The new status string.
+     * @return The updated SessionDto.
+     * @throws ResourceNotFoundException if the session does not exist.
+     */
     @Override
     public SessionDto updateSessionStatus(Long id, String status) {
         MentorshipSession session = sessionRepository.findById(id)
@@ -66,6 +90,7 @@ public class SessionServiceImpl implements SessionService {
                             System.err.println("Could not fetch mentor rate for earnings: " + e.getMessage());
                         }
                     }
+                    
                     
                     if (rate != null) {
                         mentorServiceClient.addEarnings(authHeader, updatedSession.getMentorId(), rate);
@@ -95,6 +120,12 @@ public class SessionServiceImpl implements SessionService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Helper method to map a MentorshipSession entity to a SessionEvent and
+     * publish it to the RabbitMQ topic exchange.
+     *
+     * @param session The updated session entity.
+     */
     private void publishEvent(MentorshipSession session) {
         SessionEvent event = SessionEvent.builder()
                 .sessionId(session.getId())

@@ -4,6 +4,7 @@ import com.capgemini.user.dto.UserDto;
 import com.capgemini.user.entity.User;
 import org.springframework.stereotype.Component;
 
+// Mapper class for converting between User entity and UserDto
 @Component
 public class UserMapper {
 

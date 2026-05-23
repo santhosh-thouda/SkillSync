@@ -24,7 +24,7 @@ public class MentorServiceImpl implements MentorService {
     @Override
     public MentorDto applyForMentor(MentorApplyRequest request) {
         Mentor mentor = mentorRepository.findByUserId(request.getUserId())
-                .orElseGet(() -> Mentor.builder()
+                .orElseGet(() -> Mentor.builder() // User user = new User(); Mentor mentor = Mentor.builder().id().firstName().lastname()
                         .userId(request.getUserId())
                         .available(true)
                         .approved(false)
@@ -53,7 +53,7 @@ public class MentorServiceImpl implements MentorService {
     @Override
     public List<MentorDto> getAllMentors() {
         return mentorRepository.findAll().stream()
-                .map(mentorMapper::toDto)
+                .map(mentorMapper::toDto) 
                 .collect(Collectors.toList());
     }
 

@@ -5,10 +5,20 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Service;
 
+/**
+ * Asynchronous Message Consumer for the Notification domain.
+ * Listens to RabbitMQ queues to decouple heavy email operations from the core booking engine.
+ */
 @Service
 @Slf4j
 public class NotificationListener {
 
+    /**
+     * Consumes {@link SessionEvent} messages from the configured RabbitMQ queue.
+     * Contains the routing logic to dispatch different email templates based on the session's new status.
+     *
+     * @param event The deserialized SessionEvent containing IDs and status.
+     */
     @RabbitListener(queues = "${rabbitmq.queue}")
     public void handleSessionEvent(SessionEvent event) {
         log.info("Received session event via RabbitMQ: {}", event);

@@ -22,6 +22,11 @@ import org.springframework.stereotype.Service;
 import java.util.Collections;
 import java.util.Locale;
 
+/**
+ * Core business logic service for Authentication and User Management.
+ * Handles the registration workflow, BCrypt password hashing, JWT generation,
+ * and orchestrates cross-service synchronization using Feign clients.
+ */
 @Service
 @Slf4j
 public class AuthService {
@@ -45,6 +50,10 @@ public class AuthService {
         this.userServiceClient = userServiceClient;
     }
 
+    /**
+     * Initializes a default administrator account upon application startup if one doesn't exist.
+     * Also triggers a background synchronization for legacy mentor accounts.
+     */
     @PostConstruct
     public void initAdminUser() {
         String email = "admin@skillsync.com";
@@ -75,6 +84,13 @@ public class AuthService {
                 });
     }
 
+    /**
+     * Registers a new user into the system.
+     * Encrypts the raw password, saves to the local PostgreSQL database, and triggers
+     * a synchronization event to ensure the profile is replicated in downstream services.
+     *
+     * @param request DTO containing the user's registration details.
+     */
     @Transactional
     public void register(RegisterRequest request) {
         log.info("Registering new user with email: {} and role: {}", request.getEmail(), request.getRole());
@@ -89,6 +105,12 @@ public class AuthService {
         log.info("Successfully registered and synced user: {}", savedUser.getEmail());
     }
 
+    /**
+     * Synchronizes the newly created user profile across bounded contexts (User Service and Mentor Service).
+     * Prevents data silos by publishing the minimal required identity data.
+     *
+     * @param savedUser The newly persisted user entity.
+     */
     private void syncRegistration(User savedUser) {
         String role = savedUser.getRole() == null ? "" : savedUser.getRole().trim().toUpperCase(Locale.ROOT);
 
@@ -141,6 +163,14 @@ public class AuthService {
         return "LEARNER";
     }
 
+    /**
+     * Authenticates a user by comparing the raw password against the stored BCrypt hash.
+     *
+     * @param request Login credentials containing email and plaintext password.
+     * @return AuthResponse containing the minted JWT and role.
+     * @throws ResourceNotFoundException if email does not exist.
+     * @throws BadRequestException if password does not match.
+     */
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
@@ -154,6 +184,13 @@ public class AuthService {
         return new AuthResponse(token, user.getId(), user.getRole());
     }
 
+    /**
+     * Refreshes an existing token, extending the user's session without re-authenticating.
+     *
+     * @param request Contains the current unexpired/expired valid JWT.
+     * @return AuthResponse containing the new JWT.
+     * @throws ResourceNotFoundException if the email within the token no longer maps to an active user.
+     */
     public AuthResponse refresh(RefreshRequest request) {
         String email = jwtUtil.extractEmail(request.getToken());
         User user = userRepository.findByEmail(email)

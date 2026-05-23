@@ -14,6 +14,7 @@ public class JwtTokenService {
     @Value("${jwt.secret}")
     private String secret;
 
+    // Extracts claims from the token and return the principal
     public JwtPrincipal extractPrincipal(String token) {
         Claims claims = Jwts.parser()
                 .verifyWith(getKey())
@@ -22,6 +23,8 @@ public class JwtTokenService {
                 .getPayload();
 
         Object userId = claims.get("userId");
+
+        // Check if the userId is Number or a String to convert it to Long
         Long parsedUserId = userId instanceof Number number ? number.longValue() : Long.parseLong(userId.toString());
 
         return new JwtPrincipal(

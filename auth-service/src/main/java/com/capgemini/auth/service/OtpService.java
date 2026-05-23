@@ -13,6 +13,11 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Service responsible for the generation, dispatch, and validation of One-Time Passwords (OTPs).
+ * Uses an in-memory concurrent map for state management (can be replaced with Redis for clustering).
+ * Handles SMTP email dispatch for the registration workflow.
+ */
 @Service
 @Slf4j
 public class OtpService {
@@ -34,6 +39,13 @@ public class OtpService {
         this.userRepository = userRepository;
     }
 
+    /**
+     * Generates a random 6-digit OTP, stores it in memory with a TTL, and dispatches an email.
+     * Edge Case: Throws an exception if the email is already registered in the system.
+     *
+     * @param email The recipient's email address.
+     * @param name The recipient's name for email personalization.
+     */
     public void generateAndSend(String email, String name) {
         // Check if email is already registered
         if (userRepository.findByEmail(email.toLowerCase()).isPresent()) {
@@ -67,6 +79,14 @@ public class OtpService {
         }
     }
 
+    /**
+     * Validates an OTP submitted by the user.
+     * Removes the OTP from the store upon successful validation to prevent replay attacks.
+     *
+     * @param email The target email address.
+     * @param otp The 6-digit string provided by the user.
+     * @return true if valid and unexpired; false otherwise.
+     */
     public boolean verify(String email, String otp) {
         long[] stored = otpStore.get(email.toLowerCase());
         if (stored == null) return false;
@@ -94,6 +114,12 @@ public class OtpService {
     // Verified marker — stored separately so register can check
     private final Map<String, Boolean> verifiedEmails = new ConcurrentHashMap<>();
 
+    /**
+     * Marks an email as successfully verified in a temporary map so the subsequent
+     * registration API call can proceed without needing the OTP again.
+     *
+     * @param email The verified email.
+     */
     public void markVerified(String email) {
         verifiedEmails.put(email.toLowerCase(), true);
     }
